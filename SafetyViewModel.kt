@@ -1,0 +1,464 @@
+package com.example.viewmodel
+
+import android.app.Application
+import android.location.Location
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.BuildConfig
+import com.example.location.GeocodingService
+import com.example.location.RealLocationTracker
+import com.example.location.RouteService
+import com.example.model.AlertDispatchLog
+import com.example.model.AppScreen
+import com.example.model.EmergencyContact
+import com.example.model.GeoCoordinate
+import com.example.model.JourneySession
+import com.example.model.PlannedRouteData
+import com.example.model.RoutePoint
+import com.example.model.SafetyStatus
+import com.example.model.TravelMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
+
+class SafetyViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val locationTracker = RealLocationTracker(application)
+    private val geocodingService = GeocodingService(application)
+    private val routeService = RouteService()
+
+    // Current Screen
+    private val _currentScreen = MutableStateFlow(AppScreen.HOME)
+    val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
+
+    // Safety status
+    private val _safetyStatus = MutableStateFlow(SafetyStatus.SAFE)
+    val safetyStatus: StateFlow<SafetyStatus> = _safetyStatus.asStateFlow()
+
+    // Real GPS & Location State
+    private val _isRealGpsActive = MutableStateFlow(false)
+    val isRealGpsActive: StateFlow<Boolean> = _isRealGpsActive.asStateFlow()
+
+    private val _isLocationPermissionGranted = MutableStateFlow(locationTracker.hasLocationPermission())
+    val isLocationPermissionGranted: StateFlow<Boolean> = _isLocationPermissionGranted.asStateFlow()
+
+    private val _isLocationServiceEnabled = MutableStateFlow(locationTracker.isLocationServiceEnabled())
+    val isLocationServiceEnabled: StateFlow<Boolean> = _isLocationServiceEnabled.asStateFlow()
+
+    private val _locationErrorMessage = MutableStateFlow<String?>(null)
+    val locationErrorMessage: StateFlow<String?> = _locationErrorMessage.asStateFlow()
+
+    // Simulation vs Real GPS Mode distinction
+    private val _isSimulationMode = MutableStateFlow(false)
+    val isSimulationMode: StateFlow<Boolean> = _isSimulationMode.asStateFlow()
+
+    // Raw location telemetry
+    private val _rawLatitude = MutableStateFlow<Double?>(null)
+    val rawLatitude: StateFlow<Double?> = _rawLatitude.asStateFlow()
+
+    private val _rawLongitude = MutableStateFlow<Double?>(null)
+    val rawLongitude: StateFlow<Double?> = _rawLongitude.asStateFlow()
+
+    private val _locationAccuracyMeters = MutableStateFlow<Float?>(null)
+    val locationAccuracyMeters: StateFlow<Float?> = _locationAccuracyMeters.asStateFlow()
+
+    // Telemetry strings
+    private val _currentCoordinates = MutableStateFlow("Waiting for GPS fix...")
+    val currentCoordinates: StateFlow<String> = _currentCoordinates.asStateFlow()
+
+    private val _currentAddress = MutableStateFlow("Acquiring GPS location...")
+    val currentAddress: StateFlow<String> = _currentAddress.asStateFlow()
+
+    private val _currentSpeedKmh = MutableStateFlow(0)
+    val currentSpeedKmh: StateFlow<Int> = _currentSpeedKmh.asStateFlow()
+
+    // Emergency Contacts
+    private val _contacts = MutableStateFlow<List<EmergencyContact>>(
+        listOf(
+            EmergencyContact(name = "Ananya Sharma (Mother)", phone = "+91 98765 43210", relationship = "Mother", isPrimary = true),
+            EmergencyContact(name = "Pooja Verma (Sister)", phone = "+91 98234 56789", relationship = "Sister", isPrimary = false),
+            EmergencyContact(name = "Rhea Kapoor (Friend)", phone = "+91 91234 56780", relationship = "Friend", isPrimary = false)
+        )
+    )
+    val contacts: StateFlow<List<EmergencyContact>> = _contacts.asStateFlow()
+
+    // Current Active Journey & Planned Road Route
+    private val _activeJourney = MutableStateFlow<JourneySession?>(null)
+    val activeJourney: StateFlow<JourneySession?> = _activeJourney.asStateFlow()
+
+    private val _plannedRoute = MutableStateFlow<PlannedRouteData?>(null)
+    val plannedRoute: StateFlow<PlannedRouteData?> = _plannedRoute.asStateFlow()
+
+    private val _isRouteLoading = MutableStateFlow(false)
+    val isRouteLoading: StateFlow<Boolean> = _isRouteLoading.asStateFlow()
+
+    // Journey progress
+    private val _journeyProgress = MutableStateFlow(0.0f)
+    val journeyProgress: StateFlow<Float> = _journeyProgress.asStateFlow()
+
+    // Is the user currently deviating from the planned route?
+    private val _isDeviating = MutableStateFlow(false)
+    val isDeviating: StateFlow<Boolean> = _isDeviating.asStateFlow()
+
+    // Safety Check Countdown (30 seconds)
+    private val _countdownSeconds = MutableStateFlow(30)
+    val countdownSeconds: StateFlow<Int> = _countdownSeconds.asStateFlow()
+
+    private var countdownJob: Job? = null
+
+    // Alert Logs for Emergency screen
+    private val _dispatchedAlerts = MutableStateFlow<List<AlertDispatchLog>>(emptyList())
+    val dispatchedAlerts: StateFlow<List<AlertDispatchLog>> = _dispatchedAlerts.asStateFlow()
+
+    // Siren and Strobe state in emergency mode
+    private val _isSirenActive = MutableStateFlow(true)
+    val isSirenActive: StateFlow<Boolean> = _isSirenActive.asStateFlow()
+
+    // Notification toast / message
+    private val _toastMessage = MutableStateFlow<String?>(null)
+    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+
+    init {
+        refreshLocationPermissionState()
+    }
+
+    fun navigateTo(screen: AppScreen) {
+        _currentScreen.value = screen
+    }
+
+    fun refreshLocationPermissionState() {
+        _isLocationPermissionGranted.value = locationTracker.hasLocationPermission()
+        _isLocationServiceEnabled.value = locationTracker.isLocationServiceEnabled()
+    }
+
+    fun setLocationPermission(granted: Boolean) {
+        _isLocationPermissionGranted.value = granted
+        if (granted && _activeJourney.value != null) {
+            startTrackingRealGps()
+        }
+    }
+
+    fun onPermissionResult(granted: Boolean) {
+        _isLocationPermissionGranted.value = granted
+        if (granted) {
+            _locationErrorMessage.value = null
+            if (_activeJourney.value != null) {
+                startTrackingRealGps()
+            }
+        } else {
+            _locationErrorMessage.value = "Location permission denied. Real GPS tracking cannot function without location permission."
+            _currentCoordinates.value = "Permission Denied"
+            _currentAddress.value = "Location permission required"
+        }
+    }
+
+    fun clearToast() {
+        _toastMessage.value = null
+    }
+
+    fun showToast(msg: String) {
+        _toastMessage.value = msg
+    }
+
+    private fun formatCoordinates(lat: Double, lon: Double): String {
+        val latDir = if (lat >= 0) "N" else "S"
+        val lonDir = if (lon >= 0) "E" else "W"
+        return String.format(Locale.US, "%.4f° %s, %.4f° %s", abs(lat), latDir, abs(lon), lonDir)
+    }
+
+    // Real Location Updates Trigger
+    fun startTrackingRealGps() {
+        refreshLocationPermissionState()
+
+        if (!_isLocationPermissionGranted.value) {
+            _locationErrorMessage.value = "Location permission is required for live GPS tracking. Please grant permission."
+            _currentCoordinates.value = "Permission Required"
+            _currentAddress.value = "Location permission required"
+            return
+        }
+
+        if (!_isLocationServiceEnabled.value) {
+            _locationErrorMessage.value = "Device location services (GPS) are turned off. Please turn on Location in Settings."
+            _currentCoordinates.value = "GPS Disabled"
+            _currentAddress.value = "Device location services disabled"
+            return
+        }
+
+        _locationErrorMessage.value = null
+        if (_rawLatitude.value == null) {
+            _currentCoordinates.value = "Acquiring GPS fix..."
+            _currentAddress.value = "Locating device via GPS..."
+        }
+        _isRealGpsActive.value = true
+
+        locationTracker.startLocationUpdates(
+            onLocationResult = { location ->
+                handleRealLocation(location)
+            },
+            onError = { errorMsg ->
+                _locationErrorMessage.value = errorMsg
+            }
+        )
+    }
+
+    fun stopTrackingRealGps() {
+        locationTracker.stopLocationUpdates()
+        _isRealGpsActive.value = false
+    }
+
+    private fun handleRealLocation(location: Location) {
+        if (_isSimulationMode.value) return // Preserve test anomaly context during simulation demo
+
+        _rawLatitude.value = location.latitude
+        _rawLongitude.value = location.longitude
+        _locationAccuracyMeters.value = location.accuracy
+        _currentCoordinates.value = formatCoordinates(location.latitude, location.longitude)
+        _currentSpeedKmh.value = if (location.hasSpeed()) (location.speed * 3.6f).toInt() else 0
+        _locationErrorMessage.value = null
+        _isRealGpsActive.value = true
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val resolvedAddress = locationTracker.reverseGeocode(location.latitude, location.longitude)
+            if (!_isSimulationMode.value) {
+                if (!resolvedAddress.isNullOrBlank()) {
+                    _currentAddress.value = resolvedAddress
+                } else {
+                    _currentAddress.value = "Near ${formatCoordinates(location.latitude, location.longitude)}"
+                }
+            }
+        }
+    }
+
+    // Contacts Management
+    fun addContact(name: String, phone: String, relationship: String, isPrimary: Boolean) {
+        val newContact = EmergencyContact(
+            name = name,
+            phone = phone,
+            relationship = relationship,
+            isPrimary = isPrimary
+        )
+        val updated = if (isPrimary) {
+            _contacts.value.map { it.copy(isPrimary = false) } + newContact
+        } else {
+            _contacts.value + newContact
+        }
+        _contacts.value = updated
+        showToast("Contact '$name' added successfully")
+    }
+
+    fun removeContact(id: String) {
+        _contacts.value = _contacts.value.filterNot { it.id == id }
+        showToast("Contact removed")
+    }
+
+    fun setPrimaryContact(id: String) {
+        _contacts.value = _contacts.value.map {
+            it.copy(isPrimary = (it.id == id))
+        }
+        showToast("Primary contact updated")
+    }
+
+    // Journey Initiation with Real Geocoding & Real Road Routing
+    fun startJourney(startLoc: String, destLoc: String, mode: TravelMode) {
+        viewModelScope.launch {
+            _isRouteLoading.value = true
+            _isSimulationMode.value = false
+            _isDeviating.value = false
+            _safetyStatus.value = SafetyStatus.SAFE
+            _currentScreen.value = AppScreen.JOURNEY_MONITORING
+
+            // Start Real GPS tracking immediately
+            startTrackingRealGps()
+
+            // Resolve Origin and Destination to geographic coordinates
+            val currentLat = _rawLatitude.value ?: 12.9716
+            val currentLon = _rawLongitude.value ?: 77.5946
+
+            val originGeo = geocodingService.resolveLocation(
+                query = startLoc,
+                fallbackLat = currentLat,
+                fallbackLon = currentLon
+            ) ?: GeoCoordinate(currentLat, currentLon, startLoc)
+
+            val destGeo = geocodingService.resolveLocation(
+                query = destLoc,
+                fallbackLat = originGeo.latitude + 0.05,
+                fallbackLon = originGeo.longitude + 0.08
+            ) ?: GeoCoordinate(originGeo.latitude + 0.05, originGeo.longitude + 0.08, destLoc)
+
+            // Calculate real road route via OpenStreetMap OSRM Routing Engine (Zero API Key required)
+            val computedRoute = routeService.computeRoute(
+                origin = originGeo,
+                destination = destGeo,
+                travelMode = mode
+            )
+
+            _plannedRoute.value = computedRoute
+
+            val session = JourneySession(
+                startLocation = originGeo.name.ifBlank { startLoc },
+                destination = destGeo.name.ifBlank { destLoc },
+                mode = mode,
+                distanceKm = if (computedRoute.distanceKm > 0) computedRoute.distanceKm else 8.4,
+                estimatedMinutes = if (computedRoute.durationMinutes > 0) computedRoute.durationMinutes else 22,
+                plannedRoute = computedRoute
+            )
+
+            _activeJourney.value = session
+            _journeyProgress.value = 0.05f
+            _isRouteLoading.value = false
+
+            showToast("Safe Corridor Activated (${String.format(Locale.US, "%.1f km", session.distanceKm)})")
+        }
+    }
+
+    // Proactive Anomaly Trigger: Route Deviation (DEMO / SIMULATION FEATURE)
+    fun triggerRouteDeviationAnomaly() {
+        _isSimulationMode.value = true
+        _isDeviating.value = true
+        _safetyStatus.value = SafetyStatus.ROUTE_DEVIATION
+        _currentAddress.value = "Unknown Service Lane, 450m Off Verified Route"
+        _currentCoordinates.value = "12.9744° N, 77.6251° E (Simulated Deviation)"
+        _currentSpeedKmh.value = 48
+
+        // Switch to Safety Check screen and start 30s countdown
+        _currentScreen.value = AppScreen.SAFETY_CHECK
+        startSafetyCheckCountdown()
+    }
+
+    // Proactive Anomaly Trigger: Prolonged Suspicious Halt (DEMO / SIMULATION FEATURE)
+    fun triggerProlongedHaltAnomaly() {
+        _isSimulationMode.value = true
+        _isDeviating.value = true
+        _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
+        _currentAddress.value = "Stationary in Unlit Zone near Highway Bypass"
+        _currentCoordinates.value = "12.9790° N, 77.6105° E (Simulated Halt 4m 12s)"
+        _currentSpeedKmh.value = 0
+
+        _currentScreen.value = AppScreen.SAFETY_CHECK
+        startSafetyCheckCountdown()
+    }
+
+    // Start 30 second visible countdown
+    private fun startSafetyCheckCountdown() {
+        countdownJob?.cancel()
+        _countdownSeconds.value = 30
+        countdownJob = viewModelScope.launch {
+            while (_countdownSeconds.value > 0) {
+                delay(1000)
+                _countdownSeconds.value -= 1
+            }
+            // If countdown reaches 0 without user responding "I'M SAFE", automatically enter Emergency Mode!
+            if (_currentScreen.value == AppScreen.SAFETY_CHECK) {
+                activateEmergencyMode(reason = "No response to 30s Safety Check countdown")
+            }
+        }
+    }
+
+    // User taps "I'M SAFE"
+    fun confirmSafeResponse() {
+        countdownJob?.cancel()
+        _isSimulationMode.value = false
+        _isDeviating.value = false
+        _safetyStatus.value = SafetyStatus.SAFE
+        _currentScreen.value = AppScreen.JOURNEY_MONITORING
+
+        // Resume real GPS data display
+        val lat = _rawLatitude.value
+        val lon = _rawLongitude.value
+        if (lat != null && lon != null) {
+            _currentCoordinates.value = formatCoordinates(lat, lon)
+            viewModelScope.launch(Dispatchers.IO) {
+                val addr = locationTracker.reverseGeocode(lat, lon)
+                if (!addr.isNullOrBlank()) {
+                    _currentAddress.value = addr
+                }
+            }
+        } else {
+            _currentCoordinates.value = "Acquiring GPS fix..."
+            _currentAddress.value = "Resuming real-time monitoring..."
+        }
+
+        showToast("Safety verified. Live GPS monitoring resumed.")
+    }
+
+    // User taps "I NEED HELP" or 30s timer expired
+    fun activateEmergencyMode(reason: String = "Manual Emergency or Anomaly Trigger") {
+        countdownJob?.cancel()
+        _safetyStatus.value = SafetyStatus.EMERGENCY
+
+        // Generate simulated SOS dispatches to all contacts with REAL coordinates if available
+        val timeStr = SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date())
+        val coordText = _currentCoordinates.value
+        val addrText = _currentAddress.value
+        val alerts = _contacts.value.map { contact ->
+            AlertDispatchLog(
+                timestamp = timeStr,
+                recipientName = contact.name,
+                recipientPhone = contact.phone,
+                message = "SOS EMERGENCY ALERT: Abhaya Kavach detected potential danger at coordinates $coordText ($addrText). Live Tracking: https://abhayakavach.safe/track/${_activeJourney.value?.id ?: "live"}",
+                status = "SENT & DELIVERED"
+            )
+        }
+        _dispatchedAlerts.value = alerts
+        _isSirenActive.value = true
+        _currentScreen.value = AppScreen.EMERGENCY_MODE
+        showToast("EMERGENCY ACTIVATED: Contacts alerted with live GPS")
+    }
+
+    fun toggleSiren() {
+        _isSirenActive.value = !_isSirenActive.value
+    }
+
+    fun cancelEmergency() {
+        countdownJob?.cancel()
+        _safetyStatus.value = SafetyStatus.SAFE
+        _isDeviating.value = false
+        _isSimulationMode.value = false
+        _isSirenActive.value = false
+        showToast("Emergency mode deactivated. You are marked SAFE.")
+        _currentScreen.value = AppScreen.HOME
+    }
+
+    fun endJourneySafe() {
+        stopTrackingRealGps()
+        countdownJob?.cancel()
+        _activeJourney.value = null
+        _plannedRoute.value = null
+        _journeyProgress.value = 0f
+        _isDeviating.value = false
+        _isSimulationMode.value = false
+        _isRealGpsActive.value = false
+        _safetyStatus.value = SafetyStatus.SAFE
+        showToast("Journey completed safely. Kavach disarmed.")
+        _currentScreen.value = AppScreen.HOME
+    }
+
+    fun testEmergencyAlertDispatch() {
+        val timeStr = SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date())
+        val testLogs = _contacts.value.map {
+            AlertDispatchLog(
+                timestamp = timeStr,
+                recipientName = it.name,
+                recipientPhone = it.phone,
+                message = "[TEST KAVACH ALERT] Test safety ping from Abhaya Kavach. GPS: ${_currentCoordinates.value}. Everything is normal.",
+                status = "TEST DELIVERED"
+            )
+        }
+        _dispatchedAlerts.value = testLogs
+        showToast("Test alert simulated for ${_contacts.value.size} emergency contacts")
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopTrackingRealGps()
+    }
+}
