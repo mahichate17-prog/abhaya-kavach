@@ -1,0 +1,6 @@
+{
+  "name": "Abhaya Kavach",
+  "description": "Proactive women's safety application with automated journey monitoring, anomaly detection, and emergency response.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
