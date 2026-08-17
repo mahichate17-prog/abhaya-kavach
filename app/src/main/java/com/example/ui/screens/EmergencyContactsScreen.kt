@@ -157,17 +157,7 @@ fun EmergencyContactsScreen(
 
         // Simulate Test Alert to All Contacts
         OutlinedButton(
-            onClick = {
-    val primary = contacts.firstOrNull { it.isPrimary } ?: contacts.firstOrNull()
-
-    if (primary != null) {
-        val clean = primary.phone.replace(" ", "")
-        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$clean"))
-        context.startActivity(intent)
-    } else {
-        viewModel.showToast("No trusted contact configured")
-    }
-},
+            onClick = { viewModel.testEmergencyAlertDispatch() },
             colors = ButtonDefaults.outlinedButtonColors(contentColor = KavachCyanPrimary),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
@@ -178,7 +168,11 @@ fun EmergencyContactsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-               Text("TEST CALL TO PRIMARY CONTACT", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+              Text(
+    "Simulate Test SMS to All Contacts",
+    fontSize = 12.sp,
+    fontWeight = FontWeight.Bold
+)
             }
         }
 
