@@ -32,17 +32,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GpsFixed
-import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.GpsOff
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Sensors
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -65,10 +58,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.model.AppScreen
-import com.example.model.SafetyStatus
-import com.example.ui.components.InteractiveRouteVisualizer
-import com.example.ui.components.PulsingShield
 import com.example.ui.components.RealOsmMapVisualizer
 import com.example.ui.theme.KavachCyanPrimary
 import com.example.ui.theme.KavachDarkBg
@@ -77,6 +66,7 @@ import com.example.ui.theme.KavachDarkSurface
 import com.example.ui.theme.KavachDarkSurfaceVariant
 import com.example.ui.theme.KavachEmergencyBg
 import com.example.ui.theme.KavachEmergencyRed
+import com.example.ui.theme.KavachPowderBlue
 import com.example.ui.theme.KavachSafeGreen
 import com.example.ui.theme.KavachSafeGreenBg
 import com.example.ui.theme.KavachTextDim
@@ -111,130 +101,56 @@ fun JourneyMonitoringScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        val granted = fineGranted || coarseGranted
-        viewModel.onPermissionResult(granted)
-    }
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            val fineGranted =
+                permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+            val coarseGranted =
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
 
-    val infiniteTransition = rememberInfiniteTransition(label = "safe_status_pulse")
+            viewModel.onPermissionResult(
+                fineGranted || coarseGranted
+            )
+        }
+
+    val infiniteTransition =
+        rememberInfiniteTransition(label = "safe_status_pulse")
+
     val dotPulse by infiniteTransition.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
+            animation = tween(
+                1000,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "dot_pulse"
     )
-Column(
-    modifier = modifier
-        .fillMaxSize()
-        .background(KavachDarkBg)
-        .verticalScroll(scrollState)
-        .padding(horizontal = 16.dp, vertical = 16.dp)
-) {
-        // Top Header
-        Card(
-    colors = CardDefaults.cardColors(
-        containerColor = if (isDeviating)
-            KavachEmergencyBg
-        else
-            KavachSafeGreenBg
-    ),
-    shape = RoundedCornerShape(18.dp),
-    modifier = Modifier.fillMaxWidth()
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(KavachDarkBg)
+            .verticalScroll(scrollState)
+            .padding(
+                horizontal = 16.dp,
+                vertical = 16.dp
+            )
     ) {
 
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(28.dp)
+        // ─────────────────────────────
+        // HEADER
+        // ─────────────────────────────
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .scale(dotPulse)
-                    .background(
-                        (if (isDeviating)
-                            KavachEmergencyRed
-                        else
-                            KavachSafeGreen
-                        ).copy(alpha = 0.18f),
-                        CircleShape
-                    )
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .background(
-                        if (isDeviating)
-                            KavachEmergencyRed
-                        else
-                            KavachSafeGreen,
-                        CircleShape
-                    )
-            )
-        }
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = if (isDeviating)
-                    "Something changed"
-                else
-                    "Journey is safe",
-                color = if (isDeviating)
-                    KavachEmergencyRed
-                else
-                    KavachSafeGreen,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = if (isDeviating)
-                    "Route deviation detected"
-                else
-                    "You're following your protected route",
-                color = KavachTextSecondary,
-                fontSize = 10.sp
-            )
-        }
-
-        if (locationAccuracy != null) {
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    text = "±${locationAccuracy?.toInt()}m",
-                    color = KavachCyanPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "GPS ACCURACY",
-                    color = KavachTextMuted,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
             Column {
                 Text(
                     text = "ABHAYA KAVACH",
@@ -243,110 +159,182 @@ Column(
                     fontWeight = FontWeight.Black,
                     letterSpacing = (-0.5).sp
                 )
+
                 Text(
-                    text = if (isSimulationMode) "SIMULATION / ANOMALY TEST MODE" else "LIVE GPS ACTIVE MONITORING",
-                    color = if (isSimulationMode) KavachWarningAmber else KavachSafeGreen,
+                    text = if (isSimulationMode)
+                        "SIMULATION / ANOMALY TEST MODE"
+                    else
+                        "LIVE GPS ACTIVE MONITORING",
+                    color = if (isSimulationMode)
+                        KavachWarningAmber
+                    else
+                        KavachSafeGreen,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
             }
 
-            // Discreet Quick SOS Button
             Box(
-    modifier = Modifier
-        .background(
-            if (isRealGpsActive && isLocationPermissionGranted)
-                KavachSafeGreenBg
-            else
-                KavachEmergencyBg,
-            RoundedCornerShape(50.dp)
-        )
-        .padding(
-            horizontal = 10.dp,
-            vertical = 6.dp
-        )
-) {
-    Text(
-        text = if (isSimulationMode)
-            "DEMO"
-        else if (isRealGpsActive)
-            "● LIVE GPS"
-        else
-            "GPS PENDING",
-
-        color = if (isSimulationMode)
-            KavachWarningAmber
-        else if (isRealGpsActive)
-            KavachSafeGreen
-        else
-            KavachWarningAmber,
-
-        fontSize = 9.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 0.5.sp
-    )
-} {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "SOS",
-                        tint = KavachEmergencyRed,
-                        modifier = Modifier.size(14.dp)
+                modifier = Modifier
+                    .background(
+                        if (
+                            isRealGpsActive &&
+                            isLocationPermissionGranted
+                        )
+                            KavachSafeGreenBg
+                        else
+                            KavachEmergencyBg,
+                        RoundedCornerShape(50.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "DISCREET SOS",
-                        color = KavachEmergencyRed,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.5.sp
+                    .padding(
+                        horizontal = 10.dp,
+                        vertical = 6.dp
+                    )
+            ) {
+                Text(
+                    text = if (isSimulationMode)
+                        "DEMO"
+                    else if (isRealGpsActive)
+                        "● LIVE GPS"
+                    else
+                        "GPS PENDING",
+                    color = if (isSimulationMode)
+                        KavachWarningAmber
+                    else if (isRealGpsActive)
+                        KavachSafeGreen
+                    else
+                        KavachWarningAmber,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ─────────────────────────────
+        // DISCREET SOS
+        // ─────────────────────────────
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    KavachEmergencyBg,
+                    RoundedCornerShape(14.dp)
+                )
+                .border(
+                    1.dp,
+                    KavachEmergencyRed.copy(alpha = 0.25f),
+                    RoundedCornerShape(14.dp)
+                )
+                .clickable {
+                    viewModel.activateEmergencyMode(
+                        "Discreet SOS Button Pressed"
                     )
                 }
+                .padding(
+                    horizontal = 14.dp,
+                    vertical = 11.dp
+                )
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "SOS",
+                    tint = KavachEmergencyRed,
+                    modifier = Modifier.size(16.dp)
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = "DISCREET SOS",
+                    color = KavachEmergencyRed,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // GPS Permission or Location Service Error Warning Banner (if error)
-        if (!isLocationPermissionGranted || !isLocationServiceEnabled || locationErrorMessage != null) {
+        // ─────────────────────────────
+        // GPS WARNING
+        // ─────────────────────────────
+
+        if (
+            !isLocationPermissionGranted ||
+            !isLocationServiceEnabled ||
+            locationErrorMessage != null
+        ) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = KavachDarkSurfaceVariant),
+                colors = CardDefaults.cardColors(
+                    containerColor = KavachDarkSurfaceVariant
+                ),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, KavachWarningAmber, RoundedCornerShape(14.dp))
+                    .border(
+                        1.dp,
+                        KavachWarningAmber,
+                        RoundedCornerShape(14.dp)
+                    )
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier.padding(14.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Default.GpsOff,
                             contentDescription = "GPS Warning",
                             tint = KavachWarningAmber,
                             modifier = Modifier.size(20.dp)
                         )
+
                         Spacer(modifier = Modifier.width(8.dp))
+
                         Text(
-                            text = if (!isLocationPermissionGranted) "LOCATION PERMISSION REQUIRED" else "GPS DISABLED",
+                            text =
+                                if (!isLocationPermissionGranted)
+                                    "LOCATION PERMISSION REQUIRED"
+                                else
+                                    "GPS DISABLED",
                             color = KavachWarningAmber,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 0.5.sp
                         )
                     }
+
                     Spacer(modifier = Modifier.height(6.dp))
+
                     Text(
                         text = locationErrorMessage
                             ?: if (!isLocationPermissionGranted)
-                                "Real-time location tracking is unavailable without ACCESS_FINE_LOCATION permission."
+                                "Real-time location tracking is unavailable without location permission."
                             else
-                                "Device location service is turned off. Please turn on Location in system settings.",
+                                "Device location service is turned off. Please enable Location in system settings.",
                         color = KavachTextPrimary,
                         fontSize = 11.sp,
                         lineHeight = 16.sp
                     )
+
                     Spacer(modifier = Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    Row(
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
+                    ) {
                         if (!isLocationPermissionGranted) {
                             Button(
                                 onClick = {
@@ -364,16 +352,25 @@ Column(
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.height(36.dp)
                             ) {
-                                Text("GRANT PERMISSION", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "GRANT PERMISSION",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         } else if (!isLocationServiceEnabled) {
                             Button(
                                 onClick = {
                                     try {
-                                        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        viewModel.showToast("Enable Location in Settings")
+                                        context.startActivity(
+                                            Intent(
+                                                Settings.ACTION_LOCATION_SOURCE_SETTINGS
+                                            )
+                                        )
+                                    } catch (_: Exception) {
+                                        viewModel.showToast(
+                                            "Enable Location in Settings"
+                                        )
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(
@@ -383,169 +380,258 @@ Column(
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.height(36.dp)
                             ) {
-                                Text("ENABLE GPS", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "ENABLE GPS",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
+
                         OutlinedButton(
-                            onClick = { viewModel.startTrackingRealGps() },
+                            onClick = {
+                                viewModel.startTrackingRealGps()
+                            },
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.height(36.dp)
                         ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Retry", modifier = Modifier.size(14.dp))
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Retry",
+                                modifier = Modifier.size(14.dp)
+                            )
+
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("RETRY GPS", fontSize = 11.sp, color = KavachTextPrimary)
+
+                            Text(
+                                "RETRY GPS",
+                                fontSize = 11.sp,
+                                color = KavachTextPrimary
+                            )
                         }
                     }
                 }
             }
+
             Spacer(modifier = Modifier.height(14.dp))
         }
 
-        // Screen 02 // Tracking Main Container
+        // ─────────────────────────────
+        // TRACKING CARD
+        // ─────────────────────────────
+
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachDarkSurface),
+            colors = CardDefaults.cardColors(
+                containerColor = KavachDarkSurface
+            ),
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, KavachDarkCardBorder, RoundedCornerShape(24.dp))
+                .border(
+                    1.dp,
+                    KavachDarkCardBorder,
+                    RoundedCornerShape(24.dp)
+                )
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                // Section Tag & Headline
+            Column(
+                modifier = Modifier.padding(18.dp)
+            ) {
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "SCREEN 02 // TRACKING",
-                        color = KavachTextMuted,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 2.sp
-                    )
-
-                    // LIVE GPS Chip
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                if (isRealGpsActive && isLocationPermissionGranted)
-                                    KavachSafeGreen.copy(alpha = 0.15f)
-                                else
-                                    KavachWarningAmber.copy(alpha = 0.15f),
-                                RoundedCornerShape(6.dp)
-                            )
-                            .border(
-                                0.5.dp,
-                                if (isRealGpsActive && isLocationPermissionGranted) KavachSafeGreen else KavachWarningAmber,
-                                RoundedCornerShape(6.dp)
-                            )
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
+                    Column {
                         Text(
-                            text = if (isSimulationMode) "SIMULATION" else if (isRealGpsActive) "LIVE GPS" else "GPS PENDING",
-                            color = if (isSimulationMode) KavachWarningAmber else if (isRealGpsActive) KavachSafeGreen else KavachWarningAmber,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.5.sp
+                            text = "ACTIVE JOURNEY",
+                            color = KavachTextMuted,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = "Your route is protected",
+                            color = KavachTextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black
                         )
                     }
+
+                    Icon(
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = null,
+                        tint = KavachSafeGreen,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "ACTIVE\nROUTE",
-                    color = KavachTextPrimary,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Black,
-                    lineHeight = 26.sp,
-                    letterSpacing = (-0.5).sp
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Real Interactive OpenStreetMap with Decoded Road Route Polyline & Live GPS
-                Box(
-    modifier = Modifier
-        .fillMaxWidth()
-        .clip(RoundedCornerShape(22.dp))
-        .border(
-            1.dp,
-            KavachPowderBlue.copy(alpha = 0.35f),
-            RoundedCornerShape(22.dp)
-        )
-) {
-    RealOsmMapVisualizer(
-        journey = activeJourney,
-        plannedRoute = plannedRoute,
-        userLat = rawLat,
-        userLon = rawLon,
-        userSpeedKmh = currentSpeed,
-        locationAccuracyMeters = locationAccuracy,
-        isDeviating = isDeviating,
-        isRouteLoading = isRouteLoading
-    )
-}
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Status & Progress Info
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // REAL OSM MAP — FUNCTIONALITY UNTOUCHED
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(
+                            RoundedCornerShape(22.dp)
+                        )
+                        .border(
+                            1.dp,
+                            KavachPowderBlue.copy(
+                                alpha = 0.35f
+                            ),
+                            RoundedCornerShape(22.dp)
+                        )
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    RealOsmMapVisualizer(
+                        journey = activeJourney,
+                        plannedRoute = plannedRoute,
+                        userLat = rawLat,
+                        userLon = rawLon,
+                        userSpeedKmh = currentSpeed,
+                        locationAccuracyMeters =
+                            locationAccuracy,
+                        isDeviating = isDeviating,
+                        isRouteLoading = isRouteLoading
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // JOURNEY STATUS
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isDeviating)
+                            KavachEmergencyBg
+                        else
+                            KavachSafeGreenBg
+                    ),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = 14.dp,
+                                vertical = 12.dp
+                            ),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
                         Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(16.dp)
+                            contentAlignment =
+                                Alignment.Center,
+                            modifier = Modifier.size(28.dp)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(16.dp)
+                                    .size(28.dp)
                                     .scale(dotPulse)
                                     .background(
-                                        (if (isDeviating) KavachWarningAmber else KavachSafeGreen).copy(alpha = 0.3f),
+                                        (if (isDeviating)
+                                            KavachEmergencyRed
+                                        else
+                                            KavachSafeGreen
+                                        ).copy(
+                                            alpha = 0.18f
+                                        ),
                                         CircleShape
                                     )
                             )
+
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(10.dp)
                                     .background(
-                                        if (isDeviating) KavachWarningAmber else KavachSafeGreen,
+                                        if (isDeviating)
+                                            KavachEmergencyRed
+                                        else
+                                            KavachSafeGreen,
                                         CircleShape
                                     )
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isDeviating) "ANOMALY DETECTED" else "JOURNEY SAFE",
-                            color = if (isDeviating) KavachWarningAmber else KavachSafeGreen,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
 
-                    Text(
-                        text = if (locationAccuracy != null) "±${locationAccuracy?.toInt()}m ACCURACY" else "HIGH PRECISION",
-                        color = KavachCyanPrimary,
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold
-                    )
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = if (isDeviating)
+                                    "Something changed"
+                                else
+                                    "Journey is safe",
+                                color = if (isDeviating)
+                                    KavachEmergencyRed
+                                else
+                                    KavachSafeGreen,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Text(
+                                text = if (isDeviating)
+                                    "Route deviation detected"
+                                else
+                                    "You're following your protected route",
+                                color = KavachTextSecondary,
+                                fontSize = 10.sp
+                            )
+                        }
+
+                        if (locationAccuracy != null) {
+                            Column(
+                                horizontalAlignment =
+                                    Alignment.End
+                            ) {
+                                Text(
+                                    text =
+                                        "±${locationAccuracy?.toInt()}m",
+                                    color =
+                                        KavachCyanPrimary,
+                                    fontSize = 13.sp,
+                                    fontWeight =
+                                        FontWeight.Bold
+                                )
+
+                                Text(
+                                    text = "GPS ACCURACY",
+                                    color =
+                                        KavachTextMuted,
+                                    fontSize = 8.sp,
+                                    fontWeight =
+                                        FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LinearProgressIndicator(
-                    progress = { if (isRealGpsActive) 0.65f else journeyProgress },
+                    progress = {
+                        if (isRealGpsActive)
+                            0.65f
+                        else
+                            journeyProgress
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
+                        .clip(
+                            RoundedCornerShape(3.dp)
+                        ),
                     color = KavachCyanPrimary,
-                    trackColor = KavachDarkSurfaceVariant,
+                    trackColor =
+                        KavachDarkSurfaceVariant,
                     strokeCap = StrokeCap.Round
                 )
             }
@@ -553,72 +639,122 @@ Column(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Telemetry 3-Grid (Displaying Real Speed & Location Data)
+        // ─────────────────────────────
+        // TELEMETRY
+        // ─────────────────────────────
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
         ) {
             TelemetryGridCard(
                 title = "SPEED",
                 value = "$currentSpeed KM/H",
                 modifier = Modifier.weight(1f)
             )
+
             TelemetryGridCard(
                 title = "ACCURACY",
-                value = if (locationAccuracy != null) "±${locationAccuracy?.toInt()} M" else "GPS LOCK",
+                value = if (locationAccuracy != null)
+                    "±${locationAccuracy?.toInt()} M"
+                else
+                    "GPS LOCK",
                 modifier = Modifier.weight(1f)
             )
+
             TelemetryGridCard(
                 title = "TRACKER",
-                value = if (isRealGpsActive) "FUSED GPS" else "INITIALIZING",
+                value = if (isRealGpsActive)
+                    "FUSED GPS"
+                else
+                    "INITIALIZING",
                 modifier = Modifier.weight(1f)
             )
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Live Real GPS Address & Coordinates Card
+        // ─────────────────────────────
+        // LOCATION CARD
+        // ─────────────────────────────
+
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachDarkSurface),
-            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = KavachDarkSurface
+            ),
+            shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, KavachDarkCardBorder, RoundedCornerShape(14.dp))
+                .border(
+                    1.dp,
+                    KavachDarkCardBorder,
+                    RoundedCornerShape(16.dp)
+                )
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (isRealGpsActive) Icons.Default.GpsFixed else Icons.Default.LocationOn,
+                    imageVector =
+                        if (isRealGpsActive)
+                            Icons.Default.GpsFixed
+                        else
+                            Icons.Default.LocationOn,
                     contentDescription = null,
-                    tint = if (isRealGpsActive) KavachSafeGreen else KavachCyanPrimary,
+                    tint =
+                        if (isRealGpsActive)
+                            KavachSafeGreen
+                        else
+                            KavachCyanPrimary,
                     modifier = Modifier.size(22.dp)
                 )
+
                 Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
                         text = currentAddress,
                         color = KavachTextPrimary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
+
                     Spacer(modifier = Modifier.height(2.dp))
+
                     Text(
-                        text = "GPS: $currentCoordinates",
-                        color = if (isRealGpsActive) KavachCyanPrimary else KavachTextMuted,
+                        text =
+                            "GPS: $currentCoordinates",
+                        color =
+                            if (isRealGpsActive)
+                                KavachCyanPrimary
+                            else
+                                KavachTextMuted,
                         fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.SemiBold
+                        fontFamily =
+                            FontFamily.Monospace,
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
+
                     if (rawLat != null && rawLon != null) {
                         Text(
-                            text = "Raw: ${String.format(java.util.Locale.US, "%.6f, %.6f", rawLat, rawLon)}",
+                            text = String.format(
+                                java.util.Locale.US,
+                                "Raw: %.6f, %.6f",
+                                rawLat,
+                                rawLon
+                            ),
                             color = KavachTextMuted,
                             fontSize = 9.sp,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily =
+                                FontFamily.Monospace
                         )
                     }
                 }
@@ -627,66 +763,94 @@ Column(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Anomaly Simulation Controls (Kept as demo features with clear labeling)
+        // ─────────────────────────────
+        // DEMO TEST LAB
+        // ─────────────────────────────
+
         Text(
-            text = "PROACTIVE DETECTION TEST LAB (DEMO)",
+            text = "SAFETY TEST LAB • DEMO",
             color = KavachTextMuted,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.5.sp
         )
+
         Spacer(modifier = Modifier.height(6.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement =
+                Arrangement.spacedBy(10.dp)
         ) {
             Button(
-                onClick = { viewModel.triggerRouteDeviationAnomaly() },
+                onClick = {
+                    viewModel.triggerRouteDeviationAnomaly()
+                },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = KavachDarkSurfaceVariant,
-                    contentColor = KavachWarningAmber
+                    containerColor =
+                        KavachDarkSurfaceVariant,
+                    contentColor =
+                        KavachWarningAmber
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp)
-                    .border(1.dp, KavachWarningAmber.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .border(
+                        1.dp,
+                        KavachWarningAmber.copy(
+                            alpha = 0.5f
+                        ),
+                        RoundedCornerShape(12.dp)
+                    )
             ) {
                 Text(
                     text = "SIMULATE DEVIATION",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
                 )
             }
 
             Button(
-                onClick = { viewModel.triggerProlongedHaltAnomaly() },
+                onClick = {
+                    viewModel.triggerProlongedHaltAnomaly()
+                },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = KavachDarkSurfaceVariant,
-                    contentColor = KavachWarningAmber
+                    containerColor =
+                        KavachDarkSurfaceVariant,
+                    contentColor =
+                        KavachWarningAmber
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp)
-                    .border(1.dp, KavachWarningAmber.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .border(
+                        1.dp,
+                        KavachWarningAmber.copy(
+                            alpha = 0.5f
+                        ),
+                        RoundedCornerShape(12.dp)
+                    )
             ) {
                 Text(
                     text = "SIMULATE LONG HALT",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // End Journey Safe Button
+        // ─────────────────────────────
+        // END JOURNEY
+        // ─────────────────────────────
+
         Button(
-            onClick = { viewModel.endJourneySafe() },
+            onClick = {
+                viewModel.endJourneySafe()
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = KavachSafeGreen,
                 contentColor = KavachDarkBg
@@ -696,17 +860,42 @@ Column(
                 .fillMaxWidth()
                 .height(54.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+
                 Spacer(modifier = Modifier.width(8.dp))
+
                 Text(
-                    text = "END JOURNEY (ARRIVED SAFELY)",
-                    fontSize = 13.sp,
+                    text =
+                        "END JOURNEY • ARRIVED SAFELY",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.7.sp
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "ABHAYA KAVACH • JOURNEY PROTECTED",
+            color = KavachTextDim,
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            modifier = Modifier.align(
+                Alignment.CenterHorizontally
+            )
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
     }
 }
 
@@ -717,11 +906,19 @@ private fun TelemetryGridCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = KavachDarkSurface),
+        colors = CardDefaults.cardColors(
+            containerColor = KavachDarkSurface
+        ),
         shape = RoundedCornerShape(14.dp),
-        modifier = modifier.border(1.dp, KavachDarkCardBorder, RoundedCornerShape(14.dp))
+        modifier = modifier.border(
+            1.dp,
+            KavachDarkCardBorder,
+            RoundedCornerShape(14.dp)
+        )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
             Text(
                 text = title,
                 color = KavachTextMuted,
@@ -729,7 +926,9 @@ private fun TelemetryGridCard(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
+
             Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = value,
                 color = KavachTextPrimary,
