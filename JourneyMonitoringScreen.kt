@@ -162,13 +162,39 @@ Column(
 
             // Discreet Quick SOS Button
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(KavachEmergencyBg)
-                    .border(1.dp, KavachEmergencyRed, RoundedCornerShape(8.dp))
-                    .clickable { viewModel.activateEmergencyMode("Discreet SOS Button Pressed") }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
+    modifier = Modifier
+        .background(
+            if (isRealGpsActive && isLocationPermissionGranted)
+                KavachSafeGreenBg
+            else
+                KavachEmergencyBg,
+            RoundedCornerShape(50.dp)
+        )
+        .padding(
+            horizontal = 10.dp,
+            vertical = 6.dp
+        )
+) {
+    Text(
+        text = if (isSimulationMode)
+            "DEMO"
+        else if (isRealGpsActive)
+            "● LIVE GPS"
+        else
+            "GPS PENDING",
+
+        color = if (isSimulationMode)
+            KavachWarningAmber
+        else if (isRealGpsActive)
+            KavachSafeGreen
+        else
+            KavachWarningAmber,
+
+        fontSize = 9.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.5.sp
+    )
+} {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Warning,
