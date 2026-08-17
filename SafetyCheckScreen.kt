@@ -1,7 +1,6 @@
 package com.example.ui.screens
-import com.example.ui.theme. KavachSafeGreen
-
-import com.example.ui.theme. KavachDarkSurfaceVariant
+import com.example.ui.theme.KavachDarkSurfaceVariant
+import com.example.ui.theme.KavachSafeGreen
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
