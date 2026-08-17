@@ -55,7 +55,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.background
+
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -127,7 +127,7 @@ fun EmergencyModeScreen(
             modifier = Modifier
                 .size(90.dp)
                 .scale(strobePulse)
-                .background(
+                .Modifier.background(
                     brush = Brush.radialGradient(
                         colors = listOf(KavachEmergencyRed.copy(alpha = 0.4f), Color.Transparent)
                     ),
