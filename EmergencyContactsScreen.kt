@@ -188,7 +188,43 @@ val smsPermissionLauncher = rememberLauncherForActivityResult(
 
         // Simulate Test Alert to All Contacts
         OutlinedButton(
-            onClick = { viewModel.testEmergencyAlertDispatch() },
+           onClick = {
+    val primary = contacts.firstOrNull { it.isPrimary }
+        ?: contacts.firstOrNull()
+
+    if (primary == null) {
+        viewModel.showToast("No trusted contact configured")
+    } else {
+        val cleanNumber = primary.phone
+            .replace(" ", "")
+            .replace("-", "")
+            .trim()
+
+        if (
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.SEND_SMS
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            val message =
+                "[ABHAYA KAVACH TEST] This is an automatic safety test message. No emergency."
+
+            val success = SmsHelper.sendEmergencySms(
+                phoneNumber = cleanNumber,
+                message = message
+            )
+
+            if (success) {
+                viewModel.showToast("Test SMS sent successfully")
+            } else {
+                viewModel.showToast("SMS could not be sent")
+            }
+        } else {
+            pendingSmsNumber = cleanNumber
+            smsPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+        }
+    }
+},
             colors = ButtonDefaults.outlinedButtonColors(contentColor = KavachCyanPrimary),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
@@ -199,7 +235,11 @@ val smsPermissionLauncher = rememberLauncherForActivityResult(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Simulate Test SMS to All Contacts", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(
+    "SEND TEST SMS AUTOMATICALLY",
+    fontSize = 12.sp,
+    fontWeight = FontWeight.Bold
+)
             }
         }
 
