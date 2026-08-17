@@ -26,9 +26,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GpsFixed
-import androidx.compose.material.icons.filled.ReportProblem
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -47,15 +47,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.model.SafetyStatus
 import com.example.ui.theme.KavachAlertCardBg
 import com.example.ui.theme.KavachDarkBg
 import com.example.ui.theme.KavachDarkCardBorder
 import com.example.ui.theme.KavachDarkSurface
-import com.example.ui.theme.KavachDarkSurfaceVariant
 import com.example.ui.theme.KavachEmergencyDarkRed
 import com.example.ui.theme.KavachEmergencyRed
+import com.example.ui.theme.KavachLavender
+import com.example.ui.theme.KavachLavenderBg
 import com.example.ui.theme.KavachSafeGreen
+import com.example.ui.theme.KavachSafeGreenBg
 import com.example.ui.theme.KavachTextDim
 import com.example.ui.theme.KavachTextMuted
 import com.example.ui.theme.KavachTextPrimary
@@ -68,20 +69,30 @@ fun SafetyCheckScreen(
     viewModel: SafetyViewModel,
     modifier: Modifier = Modifier
 ) {
-    val countdownSeconds by viewModel.countdownSeconds.collectAsState()
-    val safetyStatus by viewModel.safetyStatus.collectAsState()
-    val currentAddress by viewModel.currentAddress.collectAsState()
-    val currentCoordinates by viewModel.currentCoordinates.collectAsState()
-    val contacts by viewModel.contacts.collectAsState()
+    val countdownSeconds by
+        viewModel.countdownSeconds.collectAsState()
+
+    val currentAddress by
+        viewModel.currentAddress.collectAsState()
+
+    val currentCoordinates by
+        viewModel.currentCoordinates.collectAsState()
 
     val scrollState = rememberScrollState()
 
-    val infiniteTransition = rememberInfiniteTransition(label = "warning_pulse")
+    val infiniteTransition =
+        rememberInfiniteTransition(
+            label = "warning_pulse"
+        )
+
     val alertScale by infiniteTransition.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
+        initialValue = 0.97f,
+        targetValue = 1.03f,
         animationSpec = infiniteRepeatable(
-            animation = tween(500, easing = LinearEasing),
+            animation = tween(
+                650,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "alert_scale"
@@ -92,241 +103,592 @@ fun SafetyCheckScreen(
             .fillMaxSize()
             .background(KavachDarkBg)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        horizontalAlignment = Alignment.Start
+            .padding(
+                horizontal = 18.dp,
+                vertical = 20.dp
+            )
     ) {
-        // Top Header
+
+        // ─────────────────────────────
+        // HEADER
+        // ─────────────────────────────
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement =
+                Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(
-                    text = "ABHAYA KAVACH",
-                    color = KavachTextPrimary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.5).sp
+
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Box(
+                    contentAlignment =
+                        Alignment.Center,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(
+                            KavachLavenderBg,
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Default.Security,
+                        contentDescription = null,
+                        tint = KavachLavender,
+                        modifier =
+                            Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.width(10.dp)
                 )
-                Text(
-                    text = "PROACTIVE ANOMALY ESCALATION",
-                    color = KavachEmergencyRed,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+
+                Column {
+                    Text(
+                        text = "ABHAYA KAVACH",
+                        color =
+                            KavachTextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight =
+                            FontWeight.Black,
+                        letterSpacing =
+                            (-0.5).sp
+                    )
+
+                    Text(
+                        text = "SAFETY CHECK",
+                        color =
+                            KavachEmergencyRed,
+                        fontSize = 9.sp,
+                        fontWeight =
+                            FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
             }
 
             Box(
                 modifier = Modifier
-                    .background(KavachEmergencyRed.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
-                    .border(1.dp, KavachEmergencyRed, RoundedCornerShape(20.dp))
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .background(
+                        KavachEmergencyBg,
+                        RoundedCornerShape(50.dp)
+                    )
+                    .padding(
+                        horizontal = 10.dp,
+                        vertical = 6.dp
+                    )
             ) {
                 Text(
-                    text = "AUTONOMOUS SOS ARMED",
-                    color = KavachEmergencyRed,
+                    text = "SOS ARMED",
+                    color =
+                        KavachEmergencyRed,
                     fontSize = 9.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
+                    fontWeight =
+                        FontWeight.Black
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier =
+                Modifier.height(18.dp)
+        )
 
-        // Screen 03 // Safety Check Solid High-Impact Card (Matching Design HTML)
+        // ─────────────────────────────
+        // MAIN ALERT CARD
+        // ─────────────────────────────
+
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachAlertCardBg),
-            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor =
+                    KavachAlertCardBg
+            ),
+            shape =
+                RoundedCornerShape(28.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .scale(alertScale)
         ) {
+
             Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start
+                modifier =
+                    Modifier.padding(22.dp),
+                horizontalAlignment =
+                    Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "SCREEN 03 // SAFETY CHECK",
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
+
+                Box(
+                    contentAlignment =
+                        Alignment.Center,
+                    modifier = Modifier
+                        .size(62.dp)
+                        .background(
+                            Color.White.copy(
+                                alpha = 0.16f
+                            ),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(
+                                alpha = 0.25f
+                            ),
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Default.Warning,
+                        contentDescription =
+                            "Warning",
+                        tint = Color.White,
+                        modifier =
+                            Modifier.size(32.dp)
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(14.dp)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
-                    text = "UNUSUAL\nROUTE",
+                    text = "UNUSUAL ROUTE",
                     color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black,
-                    lineHeight = 28.sp,
-                    letterSpacing = (-0.5).sp
+                    fontSize = 25.sp,
+                    fontWeight =
+                        FontWeight.Black,
+                    letterSpacing = 0.5.sp
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(5.dp)
+                )
 
-                // Mega Countdown Display: 28s
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "${countdownSeconds}s",
-                        color = Color.White,
-                        fontSize = 64.sp,
-                        fontWeight = FontWeight.Black,
-                        lineHeight = 64.sp,
-                        letterSpacing = (-2).sp
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Deviation detected from planned route. Please confirm status.",
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                }
+                Text(
+                    text =
+                        "We noticed something unexpected.",
+                    color =
+                        Color.White.copy(
+                            alpha = 0.85f
+                        ),
+                    fontSize = 12.sp,
+                    textAlign =
+                        TextAlign.Center
+                )
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(20.dp)
+                )
 
-                // Action Button 1: I'M SAFE (High contrast White pill with Red text)
-                Button(
-                    onClick = { viewModel.confirmSafeResponse() },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = KavachEmergencyRed
-                    ),
-                    shape = RoundedCornerShape(14.dp),
+                // COUNTDOWN
+                Box(
+                    contentAlignment =
+                        Alignment.Center,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = KavachEmergencyRed,
-                            modifier = Modifier.size(20.dp)
+                        .size(128.dp)
+                        .background(
+                            Color.White.copy(
+                                alpha = 0.12f
+                            ),
+                            CircleShape
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        .border(
+                            2.dp,
+                            Color.White.copy(
+                                alpha = 0.4f
+                            ),
+                            CircleShape
+                        )
+                ) {
+
+                    Column(
+                        horizontalAlignment =
+                            Alignment.CenterHorizontally
+                    ) {
                         Text(
-                            text = "I'M SAFE",
-                            color = KavachEmergencyRed,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
+                            text =
+                                "${countdownSeconds}s",
+                            color =
+                                Color.White,
+                            fontSize = 48.sp,
+                            fontWeight =
+                                FontWeight.Black,
+                            lineHeight = 50.sp
+                        )
+
+                        Text(
+                            text = "TO RESPOND",
+                            color =
+                                Color.White.copy(
+                                    alpha = 0.75f
+                                ),
+                            fontSize = 8.sp,
+                            fontWeight =
+                                FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(18.dp)
+                )
 
-                // Action Button 2: I NEED HELP (Deep red button with border)
+                Text(
+                    text =
+                        "Deviation detected from your planned route. Confirm that you're safe or ask for help.",
+                    color =
+                        Color.White.copy(
+                            alpha = 0.9f
+                        ),
+                    fontSize = 12.sp,
+                    fontWeight =
+                        FontWeight.Medium,
+                    textAlign =
+                        TextAlign.Center,
+                    lineHeight = 17.sp
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(22.dp)
+                )
+
+                // I'M SAFE
                 Button(
-                    onClick = { viewModel.activateEmergencyMode("Manual 'I NEED HELP' Triggered") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = KavachEmergencyDarkRed,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(14.dp),
+                    onClick = {
+                        viewModel.confirmSafeResponse()
+                    },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                Color.White,
+                            contentColor =
+                                KavachEmergencyRed
+                        ),
+                    shape =
+                        RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier =
+                            Modifier.size(20.dp)
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
+
+                    Text(
+                        text = "I'M SAFE",
+                        fontSize = 15.sp,
+                        fontWeight =
+                            FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(10.dp)
+                )
+
+                // I NEED HELP
+                Button(
+                    onClick = {
+                        viewModel.activateEmergencyMode(
+                            "Manual 'I NEED HELP' Triggered"
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "I NEED HELP",
-                            color = Color.White,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
+                    },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                KavachEmergencyDarkRed,
+                            contentColor =
+                                Color.White
+                        ),
+                    shape =
+                        RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .border(
+                            1.dp,
+                            Color.White.copy(
+                                alpha = 0.25f
+                            ),
+                            RoundedCornerShape(16.dp)
                         )
-                    }
+                ) {
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.Warning,
+                        contentDescription = null,
+                        modifier =
+                            Modifier.size(20.dp)
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
+
+                    Text(
+                        text = "I NEED HELP",
+                        fontSize = 15.sp,
+                        fontWeight =
+                            FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier =
+                Modifier.height(16.dp)
+        )
 
-        // Telemetry & Escalation Context Box
+        // ─────────────────────────────
+        // LOCATION TELEMETRY
+        // ─────────────────────────────
+
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachDarkSurface),
-            shape = RoundedCornerShape(16.dp),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        KavachDarkSurface
+                ),
+            shape =
+                RoundedCornerShape(20.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, KavachDarkCardBorder, RoundedCornerShape(16.dp))
+                .border(
+                    1.dp,
+                    KavachDarkCardBorder,
+                    RoundedCornerShape(20.dp)
+                )
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "ANOMALY GPS TELEMETRY",
-                    color = KavachTextMuted,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = currentAddress,
-                    color = KavachTextPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Coordinates: $currentCoordinates",
-                    color = KavachTextSecondary,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace
-                )
 
-                Spacer(modifier = Modifier.height(10.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(KavachDarkCardBorder)
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+            Column(
+                modifier =
+                    Modifier.padding(16.dp)
+            ) {
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "AUTONOMOUS ESCALATION",
-                        color = KavachWarningAmber,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
+
+                    Box(
+                        contentAlignment =
+                            Alignment.Center,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                KavachSafeGreenBg,
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Default.GpsFixed,
+                            contentDescription =
+                                "GPS",
+                            tint =
+                                KavachSafeGreen,
+                            modifier =
+                                Modifier.size(21.dp)
+                        )
+                    }
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(10.dp)
                     )
-                    Text(
-                        text = "SMS + GPS LIVE LINK",
-                        color = KavachTextSecondary,
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
+
+                    Column {
+                        Text(
+                            text =
+                                "ANOMALY LOCATION",
+                            color =
+                                KavachTextMuted,
+                            fontSize = 10.sp,
+                            fontWeight =
+                                FontWeight.Bold,
+                            letterSpacing = 1.2.sp
+                        )
+
+                        Text(
+                            text =
+                                "Live GPS position captured",
+                            color =
+                                KavachTextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
                 }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(13.dp)
+                )
+
+                Text(
+                    text = currentAddress,
+                    color =
+                        KavachTextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(5.dp)
+                )
+
+                Text(
+                    text =
+                        currentCoordinates,
+                    color =
+                        KavachCyanPrimary,
+                    fontSize = 11.sp,
+                    fontFamily =
+                        FontFamily.Monospace
+                )
             }
         }
+
+        Spacer(
+            modifier =
+                Modifier.height(12.dp)
+        )
+
+        // ─────────────────────────────
+        // ESCALATION STATUS
+        // ─────────────────────────────
+
+        Card(
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        KavachEmergencyBg
+                ),
+            shape =
+                RoundedCornerShape(18.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+        ) {
+
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(15.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Icon(
+                    imageVector =
+                        Icons.Default.Warning,
+                    contentDescription =
+                        null,
+                    tint =
+                        KavachWarningAmber,
+                    modifier =
+                        Modifier.size(21.dp)
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(10.dp)
+                )
+
+                Column(
+                    modifier =
+                        Modifier.weight(1f)
+                ) {
+
+                    Text(
+                        text =
+                            "AUTONOMOUS ESCALATION",
+                        color =
+                            KavachWarningAmber,
+                        fontSize = 10.sp,
+                        fontWeight =
+                            FontWeight.Bold,
+                        letterSpacing =
+                            0.8.sp
+                    )
+
+                    Text(
+                        text =
+                            "If you don't respond, your safety network will be activated.",
+                        color =
+                            KavachTextSecondary,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
+
+                Text(
+                    text =
+                        "GPS + ALERT",
+                    color =
+                        KavachTextPrimary,
+                    fontSize = 8.sp,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
+
+        Text(
+            text =
+                "ABHAYA KAVACH • YOUR SAFETY COMES FIRST",
+            color =
+                KavachTextDim,
+            fontSize = 8.sp,
+            fontWeight =
+                FontWeight.Bold,
+            letterSpacing = 1.sp,
+            textAlign =
+                TextAlign.Center,
+            modifier =
+                Modifier.fillMaxWidth()
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(10.dp)
+        )
     }
 }
-
