@@ -138,11 +138,103 @@ Column(
         .padding(horizontal = 16.dp, vertical = 16.dp)
 ) {
         // Top Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Card(
+    colors = CardDefaults.cardColors(
+        containerColor = if (isDeviating)
+            KavachEmergencyBg
+        else
+            KavachSafeGreenBg
+    ),
+    shape = RoundedCornerShape(18.dp),
+    modifier = Modifier.fillMaxWidth()
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(28.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .scale(dotPulse)
+                    .background(
+                        (if (isDeviating)
+                            KavachEmergencyRed
+                        else
+                            KavachSafeGreen
+                        ).copy(alpha = 0.18f),
+                        CircleShape
+                    )
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .background(
+                        if (isDeviating)
+                            KavachEmergencyRed
+                        else
+                            KavachSafeGreen,
+                        CircleShape
+                    )
+            )
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = if (isDeviating)
+                    "Something changed"
+                else
+                    "Journey is safe",
+                color = if (isDeviating)
+                    KavachEmergencyRed
+                else
+                    KavachSafeGreen,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = if (isDeviating)
+                    "Route deviation detected"
+                else
+                    "You're following your protected route",
+                color = KavachTextSecondary,
+                fontSize = 10.sp
+            )
+        }
+
+        if (locationAccuracy != null) {
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "±${locationAccuracy?.toInt()}m",
+                    color = KavachCyanPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "GPS ACCURACY",
+                    color = KavachTextMuted,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
             Column {
                 Text(
                     text = "ABHAYA KAVACH",
