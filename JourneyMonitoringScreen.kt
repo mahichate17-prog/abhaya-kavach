@@ -372,16 +372,27 @@ Column(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Real Interactive OpenStreetMap with Decoded Road Route Polyline & Live GPS
-                RealOsmMapVisualizer(
-                    journey = activeJourney,
-                    plannedRoute = plannedRoute,
-                    userLat = rawLat,
-                    userLon = rawLon,
-                    userSpeedKmh = currentSpeed,
-                    locationAccuracyMeters = locationAccuracy,
-                    isDeviating = isDeviating,
-                    isRouteLoading = isRouteLoading
-                )
+                Box(
+    modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(22.dp))
+        .border(
+            1.dp,
+            KavachPowderBlue.copy(alpha = 0.35f),
+            RoundedCornerShape(22.dp)
+        )
+) {
+    RealOsmMapVisualizer(
+        journey = activeJourney,
+        plannedRoute = plannedRoute,
+        userLat = rawLat,
+        userLon = rawLon,
+        userSpeedKmh = currentSpeed,
+        locationAccuracyMeters = locationAccuracy,
+        isDeviating = isDeviating,
+        isRouteLoading = isRouteLoading
+    )
+}
 
                 Spacer(modifier = Modifier.height(14.dp))
 
