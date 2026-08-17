@@ -25,14 +25,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.ElectricRickshaw
 import androidx.compose.material.icons.filled.GpsFixed
-import androidx.compose.material.icons.filled.LocalTaxi
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.LocalTaxi
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Security
@@ -64,14 +62,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.AppScreen
 import com.example.model.TravelMode
-import com.example.ui.theme.KavachCyanHover
 import com.example.ui.theme.KavachCyanPrimary
 import com.example.ui.theme.KavachDarkBg
 import com.example.ui.theme.KavachDarkCardBorder
-import com.example.ui.theme.KavachDarkSurface
-import com.example.ui.theme.KavachDarkSurfaceVariant
+import com.example.ui.theme.KavachEmergencyBg
 import com.example.ui.theme.KavachEmergencyRed
+import com.example.ui.theme.KavachLavender
+import com.example.ui.theme.KavachLavenderBg
+import com.example.ui.theme.KavachPowderBlue
+import com.example.ui.theme.KavachPowderBlueBg
 import com.example.ui.theme.KavachSafeGreen
+import com.example.ui.theme.KavachSafeGreenBg
 import com.example.ui.theme.KavachTextMuted
 import com.example.ui.theme.KavachTextPrimary
 import com.example.ui.theme.KavachTextSecondary
@@ -83,161 +84,253 @@ fun JourneySetupScreen(
     viewModel: SafetyViewModel,
     modifier: Modifier = Modifier
 ) {
-    var startLocation by remember { mutableStateOf("MG Road Metro Station, Gate 2") }
-    var destination by remember { mutableStateOf("Whitefield Tech Park, Block B") }
-    var selectedMode by remember { mutableStateOf(TravelMode.CAB) }
-
-    val isLocationGranted by viewModel.isLocationPermissionGranted.collectAsState()
-    val isLocationServiceEnabled by viewModel.isLocationServiceEnabled.collectAsState()
-    val currentAddress by viewModel.currentAddress.collectAsState()
-    val currentCoordinates by viewModel.currentCoordinates.collectAsState()
-    val locationErrorMessage by viewModel.locationErrorMessage.collectAsState()
-
-    val context = LocalContext.current
-    val scrollState = rememberScrollState()
-
-    // Runtime Permission Request Launcher for ACCESS_FINE_LOCATION & ACCESS_COARSE_LOCATION
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        val granted = fineGranted || coarseGranted
-        viewModel.onPermissionResult(granted)
-        if (granted) {
-            viewModel.showToast("GPS Location Permission Granted")
-        } else {
-            viewModel.showToast("Location permission is required for real-time tracking")
-        }
+    var startLocation by remember {
+        mutableStateOf("MG Road Metro Station, Gate 2")
     }
+
+    var destination by remember {
+        mutableStateOf("Whitefield Tech Park, Block B")
+    }
+
+    var selectedMode by remember {
+        mutableStateOf(TravelMode.CAB)
+    }
+
+    val isLocationGranted by
+        viewModel.isLocationPermissionGranted.collectAsState()
+
+    val isLocationServiceEnabled by
+        viewModel.isLocationServiceEnabled.collectAsState()
+
+    val currentAddress by
+        viewModel.currentAddress.collectAsState()
+
+    val currentCoordinates by
+        viewModel.currentCoordinates.collectAsState()
+
+    val scrollState = rememberScrollState()
+    val context = LocalContext.current
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+
+            val fineGranted =
+                permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+
+            val coarseGranted =
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+            val granted = fineGranted || coarseGranted
+
+            viewModel.onPermissionResult(granted)
+
+            if (granted) {
+                viewModel.showToast(
+                    "GPS Location Permission Granted"
+                )
+            } else {
+                viewModel.showToast(
+                    "Location permission is required for real-time tracking"
+                )
+            }
+        }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(KavachDarkBg)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 20.dp)
+            .padding(
+                horizontal = 20.dp,
+                vertical = 20.dp
+            )
     ) {
-        // Navigation Header
+
+        // ─────────────────────────────
+        // HEADER
+        // ─────────────────────────────
+
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+
             IconButton(
-                onClick = { viewModel.navigateTo(AppScreen.HOME) },
+                onClick = {
+                    viewModel.navigateTo(AppScreen.HOME)
+                },
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(KavachDarkSurface, CircleShape)
-                    .border(1.dp, KavachDarkCardBorder, CircleShape)
+                    .size(42.dp)
+                    .background(
+                        KavachLavenderBg,
+                        CircleShape
+                    )
             ) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = KavachTextPrimary
+                    tint = KavachLavender
                 )
             }
-            Spacer(modifier = Modifier.width(14.dp))
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Column {
                 Text(
-                    text = "Configure Journey",
+                    text = "Plan your journey",
                     color = KavachTextPrimary,
-                    fontSize = 20.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
+
                 Text(
-                    text = "Establish safe corridor & real GPS monitoring",
+                    text = "We'll keep an eye on the road",
                     color = KavachTextSecondary,
                     fontSize = 12.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // GPS / Location Permission Requirement Card
+        // ─────────────────────────────
+        // GPS STATUS
+        // ─────────────────────────────
+
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = if (isLocationGranted && isLocationServiceEnabled) KavachDarkSurface else KavachDarkSurfaceVariant
+                containerColor =
+                    if (
+                        isLocationGranted &&
+                        isLocationServiceEnabled
+                    )
+                        KavachSafeGreenBg
+                    else
+                        KavachEmergencyBg
             ),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(20.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .border(
-                    1.dp,
-                    if (isLocationGranted && isLocationServiceEnabled) KavachSafeGreen.copy(alpha = 0.4f) else KavachWarningAmber.copy(alpha = 0.6f),
-                    RoundedCornerShape(14.dp)
-                )
                 .clickable {
+
                     if (!isLocationGranted) {
+
                         permissionLauncher.launch(
                             arrayOf(
                                 Manifest.permission.ACCESS_FINE_LOCATION,
                                 Manifest.permission.ACCESS_COARSE_LOCATION
                             )
                         )
+
                     } else if (!isLocationServiceEnabled) {
+
                         try {
-                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            viewModel.showToast("Please enable Location in device settings")
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_LOCATION_SOURCE_SETTINGS
+                                )
+                            )
+                        } catch (_: Exception) {
+                            viewModel.showToast(
+                                "Please enable Location in device settings"
+                            )
                         }
                     }
                 }
         ) {
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            if (
+                                isLocationGranted &&
+                                isLocationServiceEnabled
+                            )
+                                Color.White.copy(alpha = 0.75f)
+                            else
+                                Color.White.copy(alpha = 0.7f),
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector =
+                            if (
+                                isLocationGranted &&
+                                isLocationServiceEnabled
+                            )
+                                Icons.Default.GpsFixed
+                            else
+                                Icons.Default.Warning,
+                        contentDescription = null,
+                        tint =
+                            if (
+                                isLocationGranted &&
+                                isLocationServiceEnabled
+                            )
+                                KavachSafeGreen
+                            else
+                                KavachWarningAmber,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(
-                                if (isLocationGranted && isLocationServiceEnabled)
-                                    KavachSafeGreen.copy(alpha = 0.15f)
-                                else
-                                    KavachWarningAmber.copy(alpha = 0.15f),
-                                CircleShape
+
+                    Text(
+                        text = "Live location",
+                        color = KavachTextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = when {
+                            !isLocationGranted ->
+                                "Permission required"
+
+                            !isLocationServiceEnabled ->
+                                "Turn on device GPS"
+
+                            else ->
+                                "GPS connected • High accuracy"
+                        },
+                        color =
+                            if (
+                                isLocationGranted &&
+                                isLocationServiceEnabled
                             )
-                    ) {
-                        Icon(
-                            imageVector = if (isLocationGranted && isLocationServiceEnabled) Icons.Default.GpsFixed else Icons.Default.Warning,
-                            contentDescription = "GPS status",
-                            tint = if (isLocationGranted && isLocationServiceEnabled) KavachSafeGreen else KavachWarningAmber,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Real Device GPS Tracking",
-                            color = KavachTextPrimary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = when {
-                                !isLocationGranted -> "Permission Required • Tap to Grant"
-                                !isLocationServiceEnabled -> "Device GPS Disabled • Tap to Turn On"
-                                else -> "Active • FusedLocationProvider High Accuracy"
-                            },
-                            color = if (isLocationGranted && isLocationServiceEnabled) KavachSafeGreen else KavachWarningAmber,
-                            fontSize = 11.sp
-                        )
-                    }
+                                KavachSafeGreen
+                            else
+                                KavachWarningAmber,
+                        fontSize = 11.sp
+                    )
                 }
+
                 Switch(
                     checked = isLocationGranted,
                     onCheckedChange = { checked ->
-                        if (checked && !isLocationGranted) {
+
+                        if (
+                            checked &&
+                            !isLocationGranted
+                        ) {
                             permissionLauncher.launch(
                                 arrayOf(
                                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -245,191 +338,318 @@ fun JourneySetupScreen(
                                 )
                             )
                         } else {
-                            viewModel.setLocationPermission(checked)
+                            viewModel.setLocationPermission(
+                                checked
+                            )
                         }
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = KavachSafeGreen,
-                        checkedTrackColor = KavachDarkSurfaceVariant,
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = KavachSafeGreen,
                         uncheckedThumbColor = KavachTextMuted,
-                        uncheckedTrackColor = KavachDarkBg
+                        uncheckedTrackColor = Color.White.copy(
+                            alpha = 0.5f
+                        )
                     )
                 )
             }
         }
 
-        // Show Error / Guidance Message if Location is not configured
-        if (!isLocationGranted || !isLocationServiceEnabled) {
-            Spacer(modifier = Modifier.height(8.dp))
+        if (
+            !isLocationGranted ||
+            !isLocationServiceEnabled
+        ) {
+
+            Spacer(modifier = Modifier.height(7.dp))
+
             Text(
-                text = if (!isLocationGranted)
-                    "⚠️ Location permission is required to detect route deviations and provide real-time coordinates."
-                else
-                    "⚠️ Device location services are turned off. Please enable GPS in device settings.",
+                text =
+                    if (!isLocationGranted)
+                        "Location permission helps Abhaya Kavach monitor your journey in real time."
+                    else
+                        "Turn on device location services to enable live tracking.",
                 color = KavachWarningAmber,
                 fontSize = 11.sp,
                 lineHeight = 15.sp,
-                modifier = Modifier.padding(horizontal = 4.dp)
+                modifier = Modifier.padding(
+                    horizontal = 5.dp
+                )
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
-        // Starting Location Field
-        Text(
-            text = "STARTING LOCATION",
-            color = KavachTextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
-            value = startLocation,
-            onValueChange = { startLocation = it },
-            placeholder = { Text("Enter pick up location", color = KavachTextMuted) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.MyLocation,
-                    contentDescription = null,
-                    tint = KavachSafeGreen
-                )
-            },
-            trailingIcon = {
-                Text(
-                    text = "GPS",
-                    color = KavachCyanPrimary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clickable {
-                            if (!isLocationGranted) {
-                                permissionLauncher.launch(
-                                    arrayOf(
-                                        Manifest.permission.ACCESS_FINE_LOCATION,
-                                        Manifest.permission.ACCESS_COARSE_LOCATION
-                                    )
-                                )
-                            } else {
-                                startLocation = if (currentAddress.isNotBlank() && !currentAddress.contains("Acquiring")) {
-                                    currentAddress
-                                } else {
-                                    "Current GPS Location ($currentCoordinates)"
-                                }
-                            }
-                        }
-                        .background(KavachCyanPrimary.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = KavachDarkSurface,
-                unfocusedContainerColor = KavachDarkSurface,
-                focusedBorderColor = KavachCyanPrimary,
-                unfocusedBorderColor = KavachDarkCardBorder,
-                focusedTextColor = KavachTextPrimary,
-                unfocusedTextColor = KavachTextPrimary
+        // ─────────────────────────────
+        // ROUTE CARD
+        // ─────────────────────────────
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
             ),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth()
-        )
-
-        // Starting preset suggestions
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            PresetChip(label = "📍 Current GPS") {
-                if (!isLocationGranted) {
-                    permissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
+
+            Column(
+                modifier = Modifier.padding(18.dp)
+            ) {
+
+                Text(
+                    text = "Where are you going?",
+                    color = KavachTextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "Set your safe route below",
+                    color = KavachTextSecondary,
+                    fontSize = 11.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // START
+                Text(
+                    text = "STARTING POINT",
+                    color = KavachTextSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(5.dp))
+
+                OutlinedTextField(
+                    value = startLocation,
+                    onValueChange = {
+                        startLocation = it
+                    },
+                    placeholder = {
+                        Text(
+                            "Enter pickup location",
+                            color = KavachTextMuted
                         )
-                    )
-                } else {
-                    startLocation = "Current GPS Location ($currentCoordinates)"
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.MyLocation,
+                            contentDescription = null,
+                            tint = KavachSafeGreen
+                        )
+                    },
+                    trailingIcon = {
+                        Text(
+                            text = "GPS",
+                            color = KavachCyanPrimary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable {
+
+                                    if (!isLocationGranted) {
+
+                                        permissionLauncher.launch(
+                                            arrayOf(
+                                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+
+                                    } else {
+
+                                        startLocation =
+                                            if (
+                                                currentAddress.isNotBlank() &&
+                                                !currentAddress.contains(
+                                                    "Acquiring"
+                                                )
+                                            ) {
+                                                currentAddress
+                                            } else {
+                                                "Current GPS Location ($currentCoordinates)"
+                                            }
+                                    }
+                                }
+                                .background(
+                                    KavachPowderBlueBg,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(
+                                    horizontal = 8.dp,
+                                    vertical = 5.dp
+                                )
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = KavachCyanPrimary,
+                        unfocusedBorderColor = KavachDarkCardBorder,
+                        focusedTextColor = KavachTextPrimary,
+                        unfocusedTextColor = KavachTextPrimary
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(7.dp)
+                ) {
+
+                    PresetChip(
+                        label = "📍 Current GPS"
+                    ) {
+
+                        if (!isLocationGranted) {
+
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+
+                        } else {
+                            startLocation =
+                                "Current GPS Location ($currentCoordinates)"
+                        }
+                    }
+
+                    PresetChip(
+                        label = "🏢 Office"
+                    ) {
+                        startLocation =
+                            "Embassy TechVillage Main Gate"
+                    }
+
+                    PresetChip(
+                        label = "🚇 Metro"
+                    ) {
+                        startLocation =
+                            "Indiranagar Metro Station"
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(17.dp))
+
+                // DESTINATION
+                Text(
+                    text = "DESTINATION",
+                    color = KavachTextSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(5.dp))
+
+                OutlinedTextField(
+                    value = destination,
+                    onValueChange = {
+                        destination = it
+                    },
+                    placeholder = {
+                        Text(
+                            "Enter destination",
+                            color = KavachTextMuted
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = KavachEmergencyRed
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = KavachCyanPrimary,
+                        unfocusedBorderColor = KavachDarkCardBorder,
+                        focusedTextColor = KavachTextPrimary,
+                        unfocusedTextColor = KavachTextPrimary
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(7.dp)
+                ) {
+
+                    PresetChip(
+                        label = "🏠 Home"
+                    ) {
+                        destination =
+                            "Green Glen Layout, Flat 402"
+                    }
+
+                    PresetChip(
+                        label = "🏢 Tech Park"
+                    ) {
+                        destination =
+                            "Whitefield Tech Park, Block B"
+                    }
+
+                    PresetChip(
+                        label = "🛍️ Mall"
+                    ) {
+                        destination =
+                            "Phoenix Marketcity Main Entry"
+                    }
                 }
             }
-            PresetChip(label = "🏢 Office") { startLocation = "Embassy TechVillage Main Gate" }
-            PresetChip(label = "🚇 Metro") { startLocation = "Indiranagar Metro Station" }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Destination Field
+        // ─────────────────────────────
+        // TRAVEL MODE
+        // ─────────────────────────────
+
         Text(
-            text = "DESTINATION",
-            color = KavachTextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
-            value = destination,
-            onValueChange = { destination = it },
-            placeholder = { Text("Enter destination address", color = KavachTextMuted) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = KavachEmergencyRed
-                )
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = KavachDarkSurface,
-                unfocusedContainerColor = KavachDarkSurface,
-                focusedBorderColor = KavachCyanPrimary,
-                unfocusedBorderColor = KavachDarkCardBorder,
-                focusedTextColor = KavachTextPrimary,
-                unfocusedTextColor = KavachTextPrimary
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
+            text = "How are you travelling?",
+            color = KavachTextPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
         )
 
-        // Destination preset suggestions
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            PresetChip(label = "🏠 Home") { destination = "Green Glen Layout, Flat 402" }
-            PresetChip(label = "🏢 Tech Park") { destination = "Whitefield Tech Park, Block B" }
-            PresetChip(label = "🛍️ Mall") { destination = "Phoenix Marketcity Main Entry" }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Travel Mode Selector
         Text(
-            text = "TRAVEL MODE",
+            text = "Choose your travel mode",
             color = KavachTextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
+            fontSize = 11.sp
         )
-        Spacer(modifier = Modifier.height(8.dp))
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+
             TravelModeCard(
                 mode = TravelMode.CAB,
-                isSelected = selectedMode == TravelMode.CAB,
+                isSelected =
+                    selectedMode == TravelMode.CAB,
                 modifier = Modifier.weight(1f)
-            ) { selectedMode = TravelMode.CAB }
+            ) {
+                selectedMode = TravelMode.CAB
+            }
 
             TravelModeCard(
                 mode = TravelMode.AUTO,
-                isSelected = selectedMode == TravelMode.AUTO,
+                isSelected =
+                    selectedMode == TravelMode.AUTO,
                 modifier = Modifier.weight(1f)
-            ) { selectedMode = TravelMode.AUTO }
+            ) {
+                selectedMode = TravelMode.AUTO
+            }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -438,99 +658,180 @@ fun JourneySetupScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+
             TravelModeCard(
                 mode = TravelMode.WALKING,
-                isSelected = selectedMode == TravelMode.WALKING,
+                isSelected =
+                    selectedMode == TravelMode.WALKING,
                 modifier = Modifier.weight(1f)
-            ) { selectedMode = TravelMode.WALKING }
+            ) {
+                selectedMode = TravelMode.WALKING
+            }
 
             TravelModeCard(
                 mode = TravelMode.TRANSIT,
-                isSelected = selectedMode == TravelMode.TRANSIT,
+                isSelected =
+                    selectedMode == TravelMode.TRANSIT,
                 modifier = Modifier.weight(1f)
-            ) { selectedMode = TravelMode.TRANSIT }
+            ) {
+                selectedMode = TravelMode.TRANSIT
+            }
         }
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // Estimated Safe Corridor Summary
+        // ─────────────────────────────
+        // SAFE ROUTE SUMMARY
+        // ─────────────────────────────
+
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachDarkSurfaceVariant.copy(alpha = 0.5f)),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(0.5.dp, KavachDarkCardBorder, RoundedCornerShape(12.dp))
+            colors = CardDefaults.cardColors(
+                containerColor = KavachPowderBlueBg
+            ),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(text = "Estimated Safe Route", color = KavachTextSecondary, fontSize = 11.sp)
-                    Text(text = "8.4 km • ~22 mins", color = KavachTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            Color.White.copy(alpha = 0.8f),
+                            CircleShape
+                        )
+                ) {
                     Icon(
                         imageVector = Icons.Default.Security,
-                        contentDescription = "Safe Score",
-                        tint = KavachSafeGreen,
-                        modifier = Modifier.size(16.dp)
+                        contentDescription = null,
+                        tint = KavachPowderBlue,
+                        modifier = Modifier.size(23.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Safety Score: 98%", color = KavachSafeGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+
+                    Text(
+                        text = "Safe route ready",
+                        color = KavachTextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "8.4 km • ~22 mins",
+                        color = KavachTextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+
+                    Text(
+                        text = "98%",
+                        color = KavachSafeGreen,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "SAFETY SCORE",
+                        color = KavachTextSecondary,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // "START JOURNEY" Button
+        // ─────────────────────────────
+        // START JOURNEY
+        // ─────────────────────────────
+
         Button(
             onClick = {
+
                 if (!isLocationGranted) {
+
                     permissionLauncher.launch(
                         arrayOf(
                             Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION
                         )
                     )
+
                 } else {
-                    viewModel.startJourney(startLocation, destination, selectedMode)
+
+                    viewModel.startJourney(
+                        startLocation,
+                        destination,
+                        selectedMode
+                    )
                 }
             },
-            enabled = startLocation.isNotBlank() && destination.isNotBlank(),
+            enabled =
+                startLocation.isNotBlank() &&
+                destination.isNotBlank(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = KavachCyanPrimary,
-                contentColor = KavachDarkBg,
-                disabledContainerColor = KavachDarkSurfaceVariant,
-                disabledContentColor = KavachTextMuted
+                contentColor = Color.White,
+                disabledContainerColor =
+                    KavachDarkCardBorder,
+                disabledContentColor =
+                    KavachTextMuted
             ),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(58.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.NearMe,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = if (!isLocationGranted) "GRANT PERMISSION & START" else "START JOURNEY",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.2.sp
-                )
-            }
+
+            Icon(
+                imageVector = Icons.Default.NearMe,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp)
+            )
+
+            Spacer(modifier = Modifier.width(9.dp))
+
+            Text(
+                text =
+                    if (!isLocationGranted)
+                        "GRANT LOCATION & START"
+                    else
+                        "START JOURNEY",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Your location is used to monitor your journey safely.",
+            color = KavachTextMuted,
+            fontSize = 9.sp,
+            modifier = Modifier.align(
+                Alignment.CenterHorizontally
+            )
+        )
+
+        Spacer(modifier = Modifier.height(15.dp))
     }
 }
 
@@ -541,15 +842,25 @@ private fun PresetChip(
 ) {
     Box(
         modifier = Modifier
-            .background(KavachDarkSurfaceVariant, RoundedCornerShape(8.dp))
-            .border(0.5.dp, KavachDarkCardBorder, RoundedCornerShape(8.dp))
+            .background(
+                Color.White,
+                RoundedCornerShape(50.dp)
+            )
+            .border(
+                1.dp,
+                KavachDarkCardBorder,
+                RoundedCornerShape(50.dp)
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(
+                horizontal = 9.dp,
+                vertical = 6.dp
+            )
     ) {
         Text(
             text = label,
             color = KavachTextSecondary,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Medium
         )
     }
@@ -562,40 +873,89 @@ private fun TravelModeCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+
     val icon = when (mode) {
-        TravelMode.CAB -> Icons.Default.LocalTaxi
-        TravelMode.AUTO -> Icons.Default.ElectricRickshaw
-        TravelMode.WALKING -> Icons.Default.DirectionsWalk
-        TravelMode.TRANSIT -> Icons.Default.DirectionsBus
+        TravelMode.CAB ->
+            Icons.Default.LocalTaxi
+
+        TravelMode.AUTO ->
+            Icons.Default.ElectricRickshaw
+
+        TravelMode.WALKING ->
+            Icons.Default.DirectionsWalk
+
+        TravelMode.TRANSIT ->
+            Icons.Default.DirectionsBus
     }
 
-    Box(
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor =
+                if (isSelected)
+                    KavachLavenderBg
+                else
+                    Color.White
+        ),
+        shape = RoundedCornerShape(18.dp),
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) KavachCyanPrimary.copy(alpha = 0.15f) else KavachDarkSurface)
-            .border(
-                1.5.dp,
-                if (isSelected) KavachCyanPrimary else KavachDarkCardBorder,
-                RoundedCornerShape(12.dp)
-            )
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 12.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = icon,
-                contentDescription = mode.label,
-                tint = if (isSelected) KavachCyanPrimary else KavachTextSecondary,
-                modifier = Modifier.size(22.dp)
+            .border(
+                if (isSelected) 1.5.dp else 1.dp,
+                if (isSelected)
+                    KavachLavender
+                else
+                    KavachDarkCardBorder,
+                RoundedCornerShape(18.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+    ) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        if (isSelected)
+                            Color.White.copy(alpha = 0.8f)
+                        else
+                            KavachPowderBlueBg,
+                        CircleShape
+                    )
+            ) {
+
+                Icon(
+                    imageVector = icon,
+                    contentDescription = mode.label,
+                    tint =
+                        if (isSelected)
+                            KavachLavender
+                        else
+                            KavachCyanPrimary,
+                    modifier = Modifier.size(21.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
             Column {
+
                 Text(
                     text = mode.label,
-                    color = if (isSelected) KavachTextPrimary else KavachTextSecondary,
+                    color = KavachTextPrimary,
                     fontSize = 12.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    fontWeight =
+                        if (isSelected)
+                            FontWeight.Bold
+                        else
+                            FontWeight.Medium
                 )
+
                 Text(
                     text = "~${mode.speedKmh} km/h",
                     color = KavachTextMuted,
