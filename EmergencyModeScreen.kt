@@ -127,7 +127,7 @@ fun EmergencyModeScreen(
             modifier = Modifier
                 .size(90.dp)
                 .scale(strobePulse)
-                .Modifier.background(
+                .background(
                     brush = Brush.radialGradient(
                         colors = listOf(KavachEmergencyRed.copy(alpha = 0.4f), Color.Transparent)
                     ),
