@@ -130,14 +130,13 @@ fun JourneyMonitoringScreen(
         ),
         label = "dot_pulse"
     )
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(KavachDarkBg)
-            .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 20.dp)
-    ) {
+Column(
+    modifier = modifier
+        .fillMaxSize()
+        .background(KavachDarkBg)
+        .verticalScroll(scrollState)
+        .padding(horizontal = 16.dp, vertical = 16.dp)
+) {
         // Top Header
         Row(
             modifier = Modifier.fillMaxWidth(),
