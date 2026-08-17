@@ -1,5 +1,10 @@
 package com.example.ui.screens
-
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.example.util.SmsHelper
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -84,6 +89,32 @@ fun EmergencyContactsScreen(
     var showAddDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    var pendingSmsNumber by remember { mutableStateOf<String?>(null) }
+
+val smsPermissionLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.RequestPermission()
+) { granted ->
+    val number = pendingSmsNumber
+    pendingSmsNumber = null
+
+    if (granted && number != null) {
+        val message =
+            "[ABHAYA KAVACH TEST] This is an automatic safety test message. No emergency."
+
+        val success = SmsHelper.sendEmergencySms(
+            phoneNumber = number,
+            message = message
+        )
+
+        if (success) {
+            viewModel.showToast("Test SMS sent successfully")
+        } else {
+            viewModel.showToast("SMS could not be sent")
+        }
+    } else {
+        viewModel.showToast("SMS permission denied")
+    }
+}
     val scrollState = rememberScrollState()
 
     Column(
