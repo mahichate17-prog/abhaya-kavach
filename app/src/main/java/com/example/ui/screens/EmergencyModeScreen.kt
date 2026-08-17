@@ -28,17 +28,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.LocalPolice
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material.icons.filled.PhoneInTalk
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,7 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.background
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -75,7 +74,12 @@ import com.example.ui.theme.KavachDarkSurfaceVariant
 import com.example.ui.theme.KavachEmergencyBg
 import com.example.ui.theme.KavachEmergencyDarkRed
 import com.example.ui.theme.KavachEmergencyRed
+import com.example.ui.theme.KavachLavender
+import com.example.ui.theme.KavachLavenderBg
+import com.example.ui.theme.KavachPowderBlueBg
 import com.example.ui.theme.KavachSafeGreen
+import com.example.ui.theme.KavachSafeGreenBg
+import com.example.ui.theme.KavachTextDim
 import com.example.ui.theme.KavachTextMuted
 import com.example.ui.theme.KavachTextPrimary
 import com.example.ui.theme.KavachTextSecondary
@@ -100,16 +104,20 @@ fun EmergencyModeScreen(
     val clipboardManager = LocalClipboardManager.current
     val scrollState = rememberScrollState()
 
-    // Urgent flashing alarm pulse
-    val infiniteTransition = rememberInfiniteTransition(label = "emergency_strobe")
-    val strobePulse by infiniteTransition.animateFloat(
+    val infiniteTransition =
+        rememberInfiniteTransition(label = "emergency_pulse")
+
+    val emergencyPulse by infiniteTransition.animateFloat(
         initialValue = 0.92f,
         targetValue = 1.08f,
         animationSpec = infiniteRepeatable(
-            animation = tween(500, easing = LinearEasing),
+            animation = tween(
+                700,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "strobe_pulse"
+        label = "emergency_pulse"
     )
 
     Column(
@@ -117,94 +125,202 @@ fun EmergencyModeScreen(
             .fillMaxSize()
             .background(KavachDarkBg)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Red Pulsing Alarm Siren Beacon
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(90.dp)
-                .scale(strobePulse)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(KavachEmergencyRed.copy(alpha = 0.4f), Color.Transparent)
-                    ),
-                    shape = CircleShape
-                )
-                .border(2.dp, KavachEmergencyRed, CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = "Emergency Siren",
-                tint = KavachEmergencyRed,
-                modifier = Modifier.size(48.dp)
+            .padding(
+                horizontal = 18.dp,
+                vertical = 20.dp
             )
+    ) {
+
+        // ─────────────────────────────
+        // EMERGENCY HEADER
+        // ─────────────────────────────
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = KavachEmergencyBg
+            ),
+            shape = RoundedCornerShape(26.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    1.dp,
+                    KavachEmergencyRed.copy(alpha = 0.45f),
+                    RoundedCornerShape(26.dp)
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(86.dp)
+                        .scale(emergencyPulse)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    KavachEmergencyRed.copy(
+                                        alpha = 0.35f
+                                    ),
+                                    Color.Transparent
+                                )
+                            ),
+                            CircleShape
+                        )
+                        .border(
+                            2.dp,
+                            KavachEmergencyRed,
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Emergency",
+                        tint = KavachEmergencyRed,
+                        modifier = Modifier.size(44.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "EMERGENCY MODE",
+                    color = KavachEmergencyRed,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.2.sp
+                )
+
+                Spacer(modifier = Modifier.height(5.dp))
+
+                Text(
+                    text = "Your safety network has been activated",
+                    color = KavachTextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(
+                            Color.White.copy(alpha = 0.08f),
+                            RoundedCornerShape(50.dp)
+                        )
+                        .padding(
+                            horizontal = 12.dp,
+                            vertical = 7.dp
+                        )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .background(
+                                KavachSafeGreen,
+                                CircleShape
+                            )
+                    )
+
+                    Spacer(modifier = Modifier.width(7.dp))
+
+                    Text(
+                        text = "LIVE GPS TRANSMISSION ACTIVE",
+                        color = KavachSafeGreen,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Headline
-        Text(
-            text = "EMERGENCY MODE ACTIVATED",
-            color = KavachEmergencyRed,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center,
-            letterSpacing = 1.sp
-        )
+        // ─────────────────────────────
+        // GPS LOCATION
+        // ─────────────────────────────
 
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionTitle("LIVE LOCATION")
 
-        Text(
-            text = "Guardian alerts dispatched • Live GPS transmission active",
-            color = KavachTextSecondary,
-            fontSize = 12.sp,
-            textAlign = TextAlign.Center
-        )
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // 1. Current GPS Location Card
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachDarkSurface),
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, KavachDarkCardBorder, RoundedCornerShape(14.dp))
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(
+                                KavachPowderBlueBg,
+                                CircleShape
+                            )
+                    ) {
                         Icon(
                             imageVector = Icons.Default.GpsFixed,
                             contentDescription = "GPS",
                             tint = KavachCyanPrimary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "CURRENT GPS LOCATION",
-                            color = KavachCyanPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            modifier = Modifier.size(22.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(11.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "GPS LOCKED",
+                            color = KavachSafeGreen,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text = "Current location",
+                            color = KavachTextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+
                     Box(
                         modifier = Modifier
-                            .background(KavachSafeGreen.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .background(
+                                KavachSafeGreenBg,
+                                RoundedCornerShape(50.dp)
+                            )
+                            .padding(
+                                horizontal = 9.dp,
+                                vertical = 5.dp
+                            )
                     ) {
-                        Text(text = "LIVE LOCK ±2M", color = KavachSafeGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "LIVE",
+                            color = KavachSafeGreen,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(13.dp))
 
                 Text(
                     text = currentAddress,
@@ -216,201 +332,272 @@ fun EmergencyModeScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Coordinates: $currentCoordinates",
-                    color = KavachTextSecondary,
-                    fontSize = 12.sp
+                    text = currentCoordinates,
+                    color = KavachCyanPrimary,
+                    fontSize = 11.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // 2. Emergency Direct Call Buttons
-        Text(
-            text = "INSTANT EMERGENCY CALLS",
-            color = KavachTextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
-            modifier = Modifier.align(Alignment.Start)
-        )
+        // ─────────────────────────────
+        // EMERGENCY CALLS
+        // ─────────────────────────────
+
+        SectionTitle("GET HELP NOW")
+
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Dial National Emergency 112
-            Button(
-                onClick = {
-                    try {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        viewModel.showToast("Opening dialer for 112")
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = KavachEmergencyRed,
-                    contentColor = KavachTextPrimary
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp)
+
+            EmergencyCallButton(
+                modifier = Modifier.weight(1f),
+                number = "112",
+                label = "Police",
+                icon = Icons.Default.LocalPolice,
+                background = KavachEmergencyRed
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocalPolice, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Call 112 Police", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                try {
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_DIAL,
+                            Uri.parse("tel:112")
+                        )
+                    )
+                } catch (_: Exception) {
+                    viewModel.showToast(
+                        "Opening dialer for 112"
+                    )
                 }
             }
 
-            // Dial Women Helpline 1091
-            Button(
-                onClick = {
-                    try {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:1091"))
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        viewModel.showToast("Opening dialer for 1091")
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = KavachEmergencyDarkRed,
-                    contentColor = KavachTextPrimary
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp)
+            EmergencyCallButton(
+                modifier = Modifier.weight(1f),
+                number = "1091",
+                label = "Women",
+                icon = Icons.Default.PhoneInTalk,
+                background = KavachEmergencyDarkRed
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.PhoneInTalk, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Women 1091", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                try {
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_DIAL,
+                            Uri.parse("tel:1091")
+                        )
+                    )
+                } catch (_: Exception) {
+                    viewModel.showToast(
+                        "Opening dialer for 1091"
+                    )
                 }
             }
         }
 
-        // Call Primary Contact Button
-        val primaryContact = contacts.firstOrNull { it.isPrimary } ?: contacts.firstOrNull()
+        val primaryContact =
+            contacts.firstOrNull { it.isPrimary }
+                ?: contacts.firstOrNull()
+
         if (primaryContact != null) {
+
             Spacer(modifier = Modifier.height(10.dp))
+
             Button(
                 onClick = {
                     try {
-                        val cleanPhone = primaryContact.phone.replace(" ", "")
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        viewModel.showToast("Calling ${primaryContact.name}")
+                        val cleanPhone =
+                            primaryContact.phone.replace(
+                                " ",
+                                ""
+                            )
+
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_DIAL,
+                                Uri.parse("tel:$cleanPhone")
+                            )
+                        )
+                    } catch (_: Exception) {
+                        viewModel.showToast(
+                            "Calling ${primaryContact.name}"
+                        )
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = KavachDarkSurface,
+                    containerColor = Color.White,
                     contentColor = KavachCyanPrimary
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-                    .border(1.dp, KavachCyanPrimary, RoundedCornerShape(12.dp))
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Call Primary: ${primaryContact.name}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
+                    .height(52.dp)
+                    .border(
+                        1.dp,
+                        KavachCyanPrimary.copy(
+                            alpha = 0.5f
+                        ),
+                        RoundedCornerShape(16.dp)
                     )
-                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Call,
+                    contentDescription = null,
+                    modifier = Modifier.size(19.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text =
+                        "CALL ${primaryContact.name.uppercase()}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // 3. Emergency Contact Alert Status Log
-        Text(
-            text = "EMERGENCY CONTACTS ALERT DISPATCH",
-            color = KavachTextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
-            modifier = Modifier.align(Alignment.Start)
-        )
+        // ─────────────────────────────
+        // GUARDIANS ALERT STATUS
+        // ─────────────────────────────
+
+        SectionTitle("GUARDIANS ALERTED")
+
         Spacer(modifier = Modifier.height(8.dp))
 
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachDarkSurface),
-            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = KavachDarkSurface
+            ),
+            shape = RoundedCornerShape(20.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, KavachDarkCardBorder, RoundedCornerShape(14.dp))
+                .border(
+                    1.dp,
+                    KavachDarkCardBorder,
+                    RoundedCornerShape(20.dp)
+                )
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+
+                    Box(
+                        contentAlignment =
+                            Alignment.Center,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(
+                                KavachSafeGreenBg,
+                                CircleShape
+                            )
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.MarkEmailRead,
+                            imageVector =
+                                Icons.Default.MarkEmailRead,
                             contentDescription = null,
                             tint = KavachSafeGreen,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${dispatchedAlerts.size} Contacts Dispatched",
-                            color = KavachTextPrimary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
+                            modifier = Modifier.size(21.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(11.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text =
+                                "${dispatchedAlerts.size} guardians",
+                            color = KavachTextPrimary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text =
+                                "Emergency alert dispatched",
+                            color = KavachTextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+
                     Text(
-                        text = "SMS + URL",
+                        text = "SENT",
                         color = KavachSafeGreen,
-                        fontSize = 11.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                if (dispatchedAlerts.isNotEmpty()) {
 
-                dispatchedAlerts.forEach { alert ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "${alert.recipientName} (${alert.recipientPhone})",
-                                color = KavachTextPrimary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "Sent at ${alert.timestamp}",
-                                color = KavachTextMuted,
-                                fontSize = 10.sp
-                            )
-                        }
-                        Box(
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    dispatchedAlerts.forEach { alert ->
+
+                        Row(
                             modifier = Modifier
-                                .background(KavachSafeGreen.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .fillMaxWidth()
+                                .padding(
+                                    vertical = 5.dp
+                                ),
+                            verticalAlignment =
+                                Alignment.CenterVertically
                         ) {
+
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(
+                                        KavachSafeGreen,
+                                        CircleShape
+                                    )
+                            )
+
+                            Spacer(
+                                modifier =
+                                    Modifier.width(9.dp)
+                            )
+
+                            Column(
+                                modifier =
+                                    Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text =
+                                        alert.recipientName,
+                                    color =
+                                        KavachTextPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight =
+                                        FontWeight.SemiBold
+                                )
+
+                                Text(
+                                    text =
+                                        alert.recipientPhone,
+                                    color =
+                                        KavachTextMuted,
+                                    fontSize = 9.sp
+                                )
+                            }
+
                             Text(
                                 text = alert.status,
                                 color = KavachSafeGreen,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 9.sp,
+                                fontWeight =
+                                    FontWeight.Bold
                             )
                         }
                     }
@@ -420,47 +607,113 @@ fun EmergencyModeScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // 4. Live Location Sharing Link & Copy Tool
-        val liveTrackUrl = "https://abhayakavach.safe/track/${activeJourney?.id ?: "live-sos"}"
-        val sosFullText = "SOS! I need help. My current GPS: $currentCoordinates ($currentAddress). Live tracking link: $liveTrackUrl"
+        // ─────────────────────────────
+        // LIVE TRACKING LINK
+        // ─────────────────────────────
+
+        val liveTrackUrl =
+            "https://abhayakavach.safe/track/${activeJourney?.id ?: "live-sos"}"
+
+        val sosFullText =
+            "SOS! I need help. My current GPS: $currentCoordinates ($currentAddress). Live tracking link: $liveTrackUrl"
 
         Card(
-            colors = CardDefaults.cardColors(containerColor = KavachDarkSurfaceVariant.copy(alpha = 0.6f)),
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, KavachDarkCardBorder, RoundedCornerShape(14.dp))
+            colors = CardDefaults.cardColors(
+                containerColor = KavachPowderBlueBg
+            ),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
+
+                    Box(
+                        contentAlignment =
+                            Alignment.Center,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                Color.White.copy(
+                                    alpha = 0.8f
+                                ),
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Default.Share,
+                            contentDescription =
+                                null,
+                            tint =
+                                KavachCyanPrimary,
+                            modifier =
+                                Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier =
+                        Modifier.width(10.dp))
+
+                    Column(
+                        modifier =
+                            Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text =
+                                "LIVE SOS TRACKING",
+                            color =
+                                KavachTextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+
+                        Text(
+                            text =
+                                "Share your location with anyone",
+                            color =
+                                KavachTextSecondary,
+                            fontSize = 10.sp
+                        )
+                    }
+
                     Text(
-                        text = "LIVE SOS TRACKING LINK",
-                        color = KavachTextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Copy",
-                        color = KavachCyanPrimary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = "COPY",
+                        color =
+                            KavachCyanPrimary,
+                        fontSize = 9.sp,
+                        fontWeight =
+                            FontWeight.Bold,
                         modifier = Modifier
                             .clickable {
-                                clipboardManager.setText(AnnotatedString(sosFullText))
-                                viewModel.showToast("SOS Message & Live Link copied to clipboard")
+                                clipboardManager
+                                    .setText(
+                                        AnnotatedString(
+                                            sosFullText
+                                        )
+                                    )
+
+                                viewModel.showToast(
+                                    "SOS Message & Live Link copied"
+                                )
                             }
-                            .padding(4.dp)
+                            .padding(5.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+
+                Spacer(modifier =
+                    Modifier.height(10.dp))
+
                 Text(
                     text = liveTrackUrl,
                     color = KavachCyanPrimary,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -468,74 +721,134 @@ fun EmergencyModeScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // 5. Alarm Siren & Strobe Toggle Tool
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Button(
-                onClick = {
-                    viewModel.toggleSiren()
-                    viewModel.showToast(if (!isSirenActive) "Siren & Strobe Activated" else "Siren Muted")
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSirenActive) KavachWarningAmber else KavachDarkSurface,
-                    contentColor = if (isSirenActive) KavachDarkBg else KavachTextPrimary
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .border(
-                        1.dp,
-                        if (isSirenActive) KavachWarningAmber else KavachDarkCardBorder,
-                        RoundedCornerShape(12.dp)
-                    )
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (isSirenActive) Icons.Default.VolumeUp else Icons.Default.FlashOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isSirenActive) "Mute Siren" else "Loud Siren",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
+        // ─────────────────────────────
+        // SIREN
+        // ─────────────────────────────
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = {
+                viewModel.toggleSiren()
 
-        // 6. Deactivate Emergency Mode (Cancel Button)
-        OutlinedButton(
-            onClick = { showCancelDialog = true },
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = KavachTextPrimary),
-            shape = RoundedCornerShape(14.dp),
+                viewModel.showToast(
+                    if (!isSirenActive)
+                        "Siren & Strobe Activated"
+                    else
+                        "Siren Muted"
+                )
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor =
+                    if (isSirenActive)
+                        KavachWarningAmber
+                    else
+                        KavachDarkSurface,
+                contentColor =
+                    if (isSirenActive)
+                        KavachDarkBg
+                    else
+                        KavachTextPrimary
+            ),
+            shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .border(1.dp, KavachDarkCardBorder, RoundedCornerShape(14.dp))
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = KavachSafeGreen, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "DEACTIVATE EMERGENCY (I'M SAFE NOW)",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
+                .border(
+                    1.dp,
+                    if (isSirenActive)
+                        KavachWarningAmber
+                    else
+                        KavachDarkCardBorder,
+                    RoundedCornerShape(16.dp)
                 )
-            }
+        ) {
+
+            Icon(
+                imageVector =
+                    if (isSirenActive)
+                        Icons.Default.VolumeUp
+                    else
+                        Icons.Default.FlashOn,
+                contentDescription = null,
+                modifier = Modifier.size(19.dp)
+            )
+
+            Spacer(modifier =
+                Modifier.width(8.dp))
+
+            Text(
+                text =
+                    if (isSirenActive)
+                        "MUTE SIREN & STROBE"
+                    else
+                        "ACTIVATE LOUD SIREN",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
+
+        Spacer(modifier = Modifier.height(22.dp))
+
+        // ─────────────────────────────
+        // DEACTIVATE
+        // ─────────────────────────────
+
+        OutlinedButton(
+            onClick = {
+                showCancelDialog = true
+            },
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = KavachSafeGreen
+            ),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp)
+        ) {
+
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = KavachSafeGreen,
+                modifier = Modifier.size(19.dp)
+            )
+
+            Spacer(modifier =
+                Modifier.width(8.dp))
+
+            Text(
+                text = "I'M SAFE — DEACTIVATE EMERGENCY",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text =
+                "ABHAYA KAVACH • HELP IS WITHIN REACH",
+            color = KavachTextDim,
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            modifier =
+                Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
     }
 
-    // Safety Cancel Confirmation Dialog
+    // ─────────────────────────────
+    // CONFIRMATION DIALOG
+    // ─────────────────────────────
+
     if (showCancelDialog) {
+
         AlertDialog(
-            onDismissRequest = { showCancelDialog = false },
+            onDismissRequest = {
+                showCancelDialog = false
+            },
+
             title = {
                 Text(
                     text = "Deactivate Emergency Mode?",
@@ -543,31 +856,114 @@ fun EmergencyModeScreen(
                     fontWeight = FontWeight.Bold
                 )
             },
+
             text = {
                 Text(
-                    text = "Are you sure you are safe? This will stop live beacon transmission and notify your emergency contacts that the emergency has ended.",
+                    text =
+                        "Are you sure you are safe? This will stop live beacon transmission and notify your emergency contacts that the emergency has ended.",
                     color = KavachTextSecondary,
                     fontSize = 13.sp
                 )
             },
+
             confirmButton = {
                 Button(
                     onClick = {
                         showCancelDialog = false
                         viewModel.cancelEmergency()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = KavachSafeGreen, contentColor = KavachDarkBg)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = KavachSafeGreen,
+                        contentColor = KavachDarkBg
+                    ),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Yes, I Am Safe", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "YES, I'M SAFE",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
+
             dismissButton = {
-                TextButton(onClick = { showCancelDialog = false }) {
-                    Text("Keep Active", color = KavachTextMuted)
+                TextButton(
+                    onClick = {
+                        showCancelDialog = false
+                    }
+                ) {
+                    Text(
+                        text = "KEEP ACTIVE",
+                        color = KavachTextMuted
+                    )
                 }
             },
+
             containerColor = KavachDarkSurface,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(22.dp)
         )
+    }
+}
+
+@Composable
+private fun SectionTitle(
+    text: String
+) {
+    Text(
+        text = text,
+        color = KavachTextSecondary,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.4.sp
+    )
+}
+
+@Composable
+private fun EmergencyCallButton(
+    modifier: Modifier,
+    number: String,
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    background: Color,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = background,
+            contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.height(56.dp)
+    ) {
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(17.dp)
+                )
+
+                Spacer(modifier =
+                    Modifier.width(5.dp))
+
+                Text(
+                    text = number,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+
+            Text(
+                text = label,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
