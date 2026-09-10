@@ -121,7 +121,7 @@ class SafetyViewModel(application: Application) : AndroidViewModel(application) 
 // ─────────────────────────────────────────────
 private companion object {
     const val ROUTE_DEVIATION_THRESHOLD_METERS = 30f
-    const val REQUIRED_DEVIATION_UPDATES = 2
+    const val REQUIRED_DEVIATION_UPDATES = 1
     const val LONG_HALT_THRESHOLD_SECONDS = 30L
     const val HALT_SPEED_THRESHOLD_KMH = 3f
     const val MAX_ACCEPTABLE_GPS_ACCURACY_METERS = 50f
@@ -274,17 +274,19 @@ private var haltStartTimeMillis: Long? = null
                 deviationUpdateCount++
 
                 if (deviationUpdateCount >= REQUIRED_DEVIATION_UPDATES) {
-                    _isDeviating.value = true
-                    _safetyStatus.value = SafetyStatus.ROUTE_DEVIATION
-                    _currentScreen.value = AppScreen.SAFETY_CHECK
+    _isDeviating.value = true
+    _safetyStatus.value = SafetyStatus.ROUTE_DEVIATION
 
-                    showToast(
-                        "Route deviation detected: ${distanceFromRoute.toInt()}m from planned route"
-                    )
+    showToast(
+        "WRONG TURN DETECTED: ${distanceFromRoute.toInt()}m off planned route"
+    )
 
-                    startSafetyCheckCountdown()
-                    deviationUpdateCount = 0
-                }
+    activateEmergencyMode(
+        reason = "Route deviation detected after wrong turn"
+    )
+
+    deviationUpdateCount = 0
+}
             } else {
                 // Back inside the safe corridor
                 deviationUpdateCount = 0
