@@ -20,8 +20,15 @@ enum class TravelMode(val label: String, val iconName: String, val speedKmh: Int
 
 enum class SafetyStatus(val title: String, val description: String) {
     SAFE("JOURNEY SAFE", "Route is within verified safe corridor. Continuous monitoring active."),
-    ROUTE_DEVIATION("UNUSUAL ROUTE DETECTED", "Vehicle has diverged from planned path by >300m."),
-    UNEXPECTED_STOP("SUSPICIOUS HALT DETECTED", "Journey stationary in non-designated zone for >3 mins."),
+    ROUTE_DEVIATION(
+    "UNUSUAL ROUTE DETECTED",
+    "Vehicle has diverged from planned path by >30m."
+),
+
+UNEXPECTED_STOP(
+    "SUSPICIOUS HALT DETECTED",
+    "Journey stationary with speed <3 km/h for >30 seconds."
+),
     EMERGENCY("EMERGENCY ACTIVATED", "Alert dispatched to emergency contacts & response network.")
 }
 
