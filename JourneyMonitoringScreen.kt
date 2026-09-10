@@ -816,70 +816,7 @@ Card(
     }
 }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(10.dp)
-        ) {
-            Button(
-                onClick = {
-                    viewModel.triggerRouteDeviationAnomaly()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor =
-                        KavachDarkSurfaceVariant,
-                    contentColor =
-                        KavachWarningAmber
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .border(
-                        1.dp,
-                        KavachWarningAmber.copy(
-                            alpha = 0.5f
-                        ),
-                        RoundedCornerShape(12.dp)
-                    )
-            ) {
-                Text(
-                    text = "SIMULATE DEVIATION",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
-
-            Button(
-                onClick = {
-                    viewModel.triggerProlongedHaltAnomaly()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor =
-                        KavachDarkSurfaceVariant,
-                    contentColor =
-                        KavachWarningAmber
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .border(
-                        1.dp,
-                        KavachWarningAmber.copy(
-                            alpha = 0.5f
-                        ),
-                        RoundedCornerShape(12.dp)
-                    )
-            ) {
-                Text(
-                    text = "SIMULATE LONG HALT",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
-        }
-
+       
         Spacer(modifier = Modifier.height(16.dp))
 
         // ─────────────────────────────
