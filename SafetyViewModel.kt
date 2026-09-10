@@ -282,7 +282,7 @@ private var haltStartTimeMillis: Long? = null
                         "Route deviation detected: ${distanceFromRoute.toInt()}m from planned route"
                     )
 
-                    startSafetyCountdown()
+                    startSafetyCheckCountdown()
                     deviationUpdateCount = 0
                 }
             } else {
@@ -311,7 +311,7 @@ private var haltStartTimeMillis: Long? = null
                     "Suspicious halt detected for ${haltDurationSeconds}s"
                 )
 
-                startSafetyCountdown()
+               startSafetyCheckCountdown()
                 haltStartTimeMillis = null
             }
 
@@ -494,32 +494,7 @@ private var haltStartTimeMillis: Long? = null
         }
     }
 
-    // Proactive Anomaly Trigger: Route Deviation (DEMO / SIMULATION FEATURE)
-    fun triggerRouteDeviationAnomaly() {
-        _isSimulationMode.value = true
-        _isDeviating.value = true
-        _safetyStatus.value = SafetyStatus.ROUTE_DEVIATION
-        _currentAddress.value = "Unknown Service Lane, 450m Off Verified Route"
-        _currentCoordinates.value = "12.9744° N, 77.6251° E (Simulated Deviation)"
-        _currentSpeedKmh.value = 48
-
-        // Switch to Safety Check screen and start 30s countdown
-        _currentScreen.value = AppScreen.SAFETY_CHECK
-        startSafetyCheckCountdown()
-    }
-
-    // Proactive Anomaly Trigger: Prolonged Suspicious Halt (DEMO / SIMULATION FEATURE)
-    fun triggerProlongedHaltAnomaly() {
-        _isSimulationMode.value = true
-        _isDeviating.value = true
-        _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
-        _currentAddress.value = "Stationary in Unlit Zone near Highway Bypass"
-        _currentCoordinates.value = "12.9790° N, 77.6105° E (Simulated Halt 4m 12s)"
-        _currentSpeedKmh.value = 0
-
-        _currentScreen.value = AppScreen.SAFETY_CHECK
-        startSafetyCheckCountdown()
-    }
+   
 
     // Start 30 second visible countdown
     private fun startSafetyCheckCountdown() {
@@ -542,6 +517,8 @@ private var haltStartTimeMillis: Long? = null
         countdownJob?.cancel()
         _isSimulationMode.value = false
         _isDeviating.value = false
+        deviationUpdateCount = 0
+        haltStartTimeMillis = null
         _safetyStatus.value = SafetyStatus.SAFE
         _currentScreen.value = AppScreen.JOURNEY_MONITORING
 
@@ -596,6 +573,8 @@ private var haltStartTimeMillis: Long? = null
         countdownJob?.cancel()
         _safetyStatus.value = SafetyStatus.SAFE
         _isDeviating.value = false
+        deviationUpdateCount = 0
+        haltStartTimeMillis = null
         _isSimulationMode.value = false
         _isSirenActive.value = false
         showToast("Emergency mode deactivated. You are marked SAFE.")
@@ -609,6 +588,8 @@ private var haltStartTimeMillis: Long? = null
         _plannedRoute.value = null
         _journeyProgress.value = 0f
         _isDeviating.value = false
+        deviationUpdateCount = 0
+        haltStartTimeMillis = null
         _isSimulationMode.value = false
         _isRealGpsActive.value = false
         _safetyStatus.value = SafetyStatus.SAFE
