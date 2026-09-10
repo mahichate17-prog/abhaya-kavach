@@ -129,6 +129,8 @@ private companion object {
 
 private var deviationUpdateCount = 0
 private var haltStartTimeMillis: Long? = null
+private var lastMovementLocation: Location? = null
+private var hasStartedMoving = false
 
     // Alert Logs for Emergency screen
     private val _dispatchedAlerts = MutableStateFlow<List<AlertDispatchLog>>(emptyList())
@@ -239,11 +241,33 @@ private var haltStartTimeMillis: Long? = null
     _currentCoordinates.value =
         formatCoordinates(location.latitude, location.longitude)
 
-    val speedKmh = if (location.hasSpeed()) {
-        location.speed * 3.6f
+   val speedKmh = if (location.hasSpeed()) {
+    location.speed * 3.6f
+} else {
+    val previousLocation = lastMovementLocation
+
+    if (previousLocation != null && location.time > previousLocation.time) {
+        val distanceMeters = previousLocation.distanceTo(location)
+        val timeSeconds = (location.time - previousLocation.time) / 1000f
+
+        if (timeSeconds > 0f) {
+            (distanceMeters / timeSeconds) * 3.6f
+        } else {
+            0f
+        }
     } else {
         0f
     }
+}
+
+val movementDistanceMeters =
+    lastMovementLocation?.distanceTo(location) ?: 0f
+
+lastMovementLocation = Location(location)
+
+if (movementDistanceMeters >= 5f || speedKmh >= HALT_SPEED_THRESHOLD_KMH) {
+    hasStartedMoving = true
+}
 
     _currentSpeedKmh.value = speedKmh.toInt()
     _locationErrorMessage.value = null
@@ -295,33 +319,41 @@ private var haltStartTimeMillis: Long? = null
         }
 
         // ───────────── LONG HALT DETECTION ─────────────
-        if (speedKmh < HALT_SPEED_THRESHOLD_KMH) {
+        // ───────────── LONG HALT DETECTION ─────────────
+// Works for both walking and vehicle journeys.
+// Detection starts only after the user has actually moved.
+if (hasStartedMoving) {
 
-            if (haltStartTimeMillis == null) {
-                haltStartTimeMillis = System.currentTimeMillis()
-            }
+    if (speedKmh < HALT_SPEED_THRESHOLD_KMH) {
 
-            val haltDurationSeconds =
-                (System.currentTimeMillis() - haltStartTimeMillis!!) / 1000L
-
-            if (haltDurationSeconds >= LONG_HALT_THRESHOLD_SECONDS) {
-                _isDeviating.value = true
-                _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
-                _currentScreen.value = AppScreen.SAFETY_CHECK
-
-                showToast(
-                    "Suspicious halt detected for ${haltDurationSeconds}s"
-                )
-
-               startSafetyCheckCountdown()
-                haltStartTimeMillis = null
-            }
-
-        } else {
-            // Vehicle has started moving again
-            haltStartTimeMillis = null
+        if (haltStartTimeMillis == null) {
+            haltStartTimeMillis = System.currentTimeMillis()
         }
+
+        val haltDurationSeconds =
+            (System.currentTimeMillis() - haltStartTimeMillis!!) / 1000L
+
+        if (haltDurationSeconds >= LONG_HALT_THRESHOLD_SECONDS) {
+
+            _isDeviating.value = true
+            _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
+            _currentScreen.value = AppScreen.SAFETY_CHECK
+
+            showToast(
+                "LONG HALT DETECTED: No movement for ${haltDurationSeconds}s"
+            )
+
+            startSafetyCheckCountdown()
+
+            haltStartTimeMillis = null
+            hasStartedMoving = false
+        }
+
+    } else {
+        // User is moving again — reset halt timer
+        haltStartTimeMillis = null
     }
+}
 
     // ─────────────────────────────────────────────
     // ADDRESS UPDATE
@@ -446,6 +478,8 @@ private var haltStartTimeMillis: Long? = null
             _isRouteLoading.value = true
             _isSimulationMode.value = false
             _isDeviating.value = false
+            lastMovementLocation = null
+            hasStartedMoving = false
             deviationUpdateCount = 0
              haltStartTimeMillis = null
             _safetyStatus.value = SafetyStatus.SAFE
@@ -577,6 +611,8 @@ private var haltStartTimeMillis: Long? = null
         _isDeviating.value = false
         deviationUpdateCount = 0
         haltStartTimeMillis = null
+        lastMovementLocation = null
+        hasStartedMoving = false
         _isSimulationMode.value = false
         _isSirenActive.value = false
         showToast("Emergency mode deactivated. You are marked SAFE.")
