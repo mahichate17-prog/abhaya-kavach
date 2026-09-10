@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.GpsOff
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -763,19 +764,57 @@ fun JourneyMonitoringScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
+        
+        
+        Spacer(modifier = Modifier.height(6.dp))
         // ─────────────────────────────
-        // DEMO TEST LAB
-        // ─────────────────────────────
+// LIVE PROACTIVE DETECTION
+// ─────────────────────────────
 
+Card(
+    colors = CardDefaults.cardColors(
+        containerColor = KavachDarkSurface
+    ),
+    shape = RoundedCornerShape(14.dp),
+    modifier = Modifier
+        .fillMaxWidth()
+        .border(
+            1.dp,
+            KavachSafeGreen.copy(alpha = 0.35f),
+            RoundedCornerShape(14.dp)
+        )
+) {
+    Column(
+        modifier = Modifier.padding(14.dp)
+    ) {
         Text(
-            text = "SAFETY TEST LAB • DEMO",
-            color = KavachTextMuted,
+            text = "LIVE PROACTIVE DETECTION",
+            color = KavachSafeGreen,
             fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Black,
             letterSpacing = 1.5.sp
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Route deviation  > 30m  •  2 GPS fixes\n" +
+                    "Suspicious halt  < 3 km/h  •  30s",
+            color = KavachTextSecondary,
+            fontSize = 11.sp,
+            lineHeight = 16.sp
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "GPS accuracy gate: ≤ 50m",
+            color = KavachTextMuted,
+            fontSize = 10.sp,
+            fontFamily = FontFamily.Monospace
+        )
+    }
+}
 
         Row(
             modifier = Modifier.fillMaxWidth(),
