@@ -1,5 +1,7 @@
 package com.example.viewmodel
-
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sqrt
 import android.app.Application
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
@@ -113,6 +115,20 @@ class SafetyViewModel(application: Application) : AndroidViewModel(application) 
     val countdownSeconds: StateFlow<Int> = _countdownSeconds.asStateFlow()
 
     private var countdownJob: Job? = null
+    // ─────────────────────────────────────────────
+// REAL GPS ANOMALY DETECTION THRESHOLDS
+// Demo-friendly values for online presentation
+// ─────────────────────────────────────────────
+private companion object {
+    const val ROUTE_DEVIATION_THRESHOLD_METERS = 30f
+    const val REQUIRED_DEVIATION_UPDATES = 2
+    const val LONG_HALT_THRESHOLD_SECONDS = 30L
+    const val HALT_SPEED_THRESHOLD_KMH = 3f
+    const val MAX_ACCEPTABLE_GPS_ACCURACY_METERS = 50f
+}
+
+private var deviationUpdateCount = 0
+private var haltStartTimeMillis: Long? = null
 
     // Alert Logs for Emergency screen
     private val _dispatchedAlerts = MutableStateFlow<List<AlertDispatchLog>>(emptyList())
@@ -215,27 +231,183 @@ class SafetyViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun handleRealLocation(location: Location) {
-        if (_isSimulationMode.value) return // Preserve test anomaly context during simulation demo
+    if (_isSimulationMode.value) return
 
-        _rawLatitude.value = location.latitude
-        _rawLongitude.value = location.longitude
-        _locationAccuracyMeters.value = location.accuracy
-        _currentCoordinates.value = formatCoordinates(location.latitude, location.longitude)
-        _currentSpeedKmh.value = if (location.hasSpeed()) (location.speed * 3.6f).toInt() else 0
-        _locationErrorMessage.value = null
-        _isRealGpsActive.value = true
+    _rawLatitude.value = location.latitude
+    _rawLongitude.value = location.longitude
+    _locationAccuracyMeters.value = location.accuracy
+    _currentCoordinates.value =
+        formatCoordinates(location.latitude, location.longitude)
 
-        viewModelScope.launch(Dispatchers.IO) {
-            val resolvedAddress = locationTracker.reverseGeocode(location.latitude, location.longitude)
-            if (!_isSimulationMode.value) {
-                if (!resolvedAddress.isNullOrBlank()) {
-                    _currentAddress.value = resolvedAddress
-                } else {
-                    _currentAddress.value = "Near ${formatCoordinates(location.latitude, location.longitude)}"
+    val speedKmh = if (location.hasSpeed()) {
+        location.speed * 3.6f
+    } else {
+        0f
+    }
+
+    _currentSpeedKmh.value = speedKmh.toInt()
+    _locationErrorMessage.value = null
+    _isRealGpsActive.value = true
+
+    // ─────────────────────────────────────────────
+    // REAL GPS ANOMALY DETECTION
+    // Only run while an active journey is being monitored
+    // ─────────────────────────────────────────────
+    if (
+        _currentScreen.value == AppScreen.JOURNEY_MONITORING &&
+        _activeJourney.value != null &&
+        location.accuracy <= MAX_ACCEPTABLE_GPS_ACCURACY_METERS
+    ) {
+
+        val plannedRoute = _plannedRoute.value
+
+        // ───────────── ROUTE DEVIATION ─────────────
+        if (plannedRoute != null && plannedRoute.polylineCoordinates.isNotEmpty()) {
+
+            val distanceFromRoute = distanceToRoute(
+                location.latitude,
+                location.longitude,
+                plannedRoute.polylineCoordinates
+            )
+
+            if (distanceFromRoute > ROUTE_DEVIATION_THRESHOLD_METERS) {
+                deviationUpdateCount++
+
+                if (deviationUpdateCount >= REQUIRED_DEVIATION_UPDATES) {
+                    _isDeviating.value = true
+                    _safetyStatus.value = SafetyStatus.ROUTE_DEVIATION
+                    _currentScreen.value = AppScreen.SAFETY_CHECK
+
+                    showToast(
+                        "Route deviation detected: ${distanceFromRoute.toInt()}m from planned route"
+                    )
+
+                    startSafetyCountdown()
+                    deviationUpdateCount = 0
                 }
+            } else {
+                // Back inside the safe corridor
+                deviationUpdateCount = 0
+                _isDeviating.value = false
+            }
+        }
+
+        // ───────────── LONG HALT DETECTION ─────────────
+        if (speedKmh < HALT_SPEED_THRESHOLD_KMH) {
+
+            if (haltStartTimeMillis == null) {
+                haltStartTimeMillis = System.currentTimeMillis()
+            }
+
+            val haltDurationSeconds =
+                (System.currentTimeMillis() - haltStartTimeMillis!!) / 1000L
+
+            if (haltDurationSeconds >= LONG_HALT_THRESHOLD_SECONDS) {
+                _isDeviating.value = true
+                _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
+                _currentScreen.value = AppScreen.SAFETY_CHECK
+
+                showToast(
+                    "Suspicious halt detected for ${haltDurationSeconds}s"
+                )
+
+                startSafetyCountdown()
+                haltStartTimeMillis = null
+            }
+
+        } else {
+            // Vehicle has started moving again
+            haltStartTimeMillis = null
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // ADDRESS UPDATE
+    // ─────────────────────────────────────────────
+    viewModelScope.launch(Dispatchers.IO) {
+        val resolvedAddress = locationTracker.reverseGeocode(
+            location.latitude,
+            location.longitude
+        )
+
+        if (!_isSimulationMode.value) {
+            if (!resolvedAddress.isNullOrBlank()) {
+                _currentAddress.value = resolvedAddress
+            } else {
+                _currentAddress.value =
+                    "Near ${formatCoordinates(location.latitude, location.longitude)}"
             }
         }
     }
+}
+    private fun distanceToRoute(
+    latitude: Double,
+    longitude: Double,
+    routePoints: List<GeoCoordinate>
+): Double {
+
+    if (routePoints.isEmpty()) return Double.MAX_VALUE
+
+    if (routePoints.size == 1) {
+        val result = FloatArray(1)
+
+        Location.distanceBetween(
+            latitude,
+            longitude,
+            routePoints[0].latitude,
+            routePoints[0].longitude,
+            result
+        )
+
+        return result[0].toDouble()
+    }
+
+    var minimumDistance = Double.MAX_VALUE
+
+    val earthRadius = 6_371_000.0
+    val latitudeScale =
+        earthRadius * Math.PI / 180.0
+
+    for (i in 0 until routePoints.size - 1) {
+
+        val start = routePoints[i]
+        val end = routePoints[i + 1]
+
+        val cosLatitude =
+            cos(Math.toRadians(latitude))
+
+        val longitudeScale =
+            latitudeScale * cosLatitude
+
+        val px = (longitude - start.longitude) * longitudeScale
+        val py = (latitude - start.latitude) * latitudeScale
+
+        val sx = (end.longitude - start.longitude) * longitudeScale
+        val sy = (end.latitude - start.latitude) * latitudeScale
+
+        val segmentLengthSquared = sx * sx + sy * sy
+
+        val t = if (segmentLengthSquared == 0.0) {
+            0.0
+        } else {
+            ((px * sx) + (py * sy)) / segmentLengthSquared
+        }
+
+        val clampedT = t.coerceIn(0.0, 1.0)
+
+        val closestX = sx * clampedT
+        val closestY = sy * clampedT
+
+        val dx = px - closestX
+        val dy = py - closestY
+
+        val distance = sqrt(dx * dx + dy * dy)
+
+        minimumDistance = min(minimumDistance, distance)
+    }
+
+    return minimumDistance
+}
 
     // Contacts Management
     fun addContact(name: String, phone: String, relationship: String, isPrimary: Boolean) {
@@ -272,6 +444,8 @@ class SafetyViewModel(application: Application) : AndroidViewModel(application) 
             _isRouteLoading.value = true
             _isSimulationMode.value = false
             _isDeviating.value = false
+            deviationUpdateCount = 0
+             haltStartTimeMillis = null
             _safetyStatus.value = SafetyStatus.SAFE
             _currentScreen.value = AppScreen.JOURNEY_MONITORING
 
