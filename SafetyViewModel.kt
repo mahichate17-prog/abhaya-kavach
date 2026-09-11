@@ -127,8 +127,6 @@ private companion object {
     const val MAX_ACCEPTABLE_GPS_ACCURACY_METERS = 50f
 }
 
-private var deviationUpdateCount = 0
-private var haltStartTimeMillis: Long? = null
 private var lastMovementLocation: Location? = null
 private var hasStartedMoving = false
 
@@ -336,35 +334,8 @@ if (hasStartedMoving && speedKmh < 3f) {
     activateEmergencyMode(
         reason = "Speed dropped below 3 km/h"
     )
-
-    longHaltJob?.cancel()
-    longHaltJob = null
-    haltStartTimeMillis = null
 }
-private fun startLongHaltTimer() {
-    if (longHaltJob?.isActive == true) return
 
-    haltStartTimeMillis = System.currentTimeMillis()
-
-    longHaltJob = viewModelScope.launch {
-        delay(LONG_HALT_THRESHOLD_SECONDS * 1000L)
-
-        if (
-    _currentScreen.value == AppScreen.JOURNEY_MONITORING &&
-    _activeJourney.value != null &&
-    haltStartTimeMillis != null
-) {_isDeviating.value = true
-            _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
-            _currentScreen.value = AppScreen.SAFETY_CHECK
-
-            showToast("LONG HALT DETECTED: No movement for 30s")
-
-            startSafetyCheckCountdown()
-
-            haltStartTimeMillis = null
-        }
-    }
-}
     // ─────────────────────────────────────────────
     // ADDRESS UPDATE
     // ─────────────────────────────────────────────
