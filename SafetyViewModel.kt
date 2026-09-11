@@ -318,21 +318,20 @@ if (movementDistanceMeters >= 5f || speedKmh >= HALT_SPEED_THRESHOLD_KMH) {
         }
 
        
-// ───────────── LOW SPEED EMERGENCY DETECTION ─────────────
-// If journey is active and speed drops below 3 km/h,
-// immediately activate Emergency Mode.
+// ───────────── NO-MOVEMENT EMERGENCY DETECTION ─────────────
+// Use actual GPS position change instead of unreliable GPS speed.
 
-if (hasStartedMoving && speedKmh < 3f) {
+if (hasStartedMoving && movementDistanceMeters < 5f) {
 
     _isDeviating.value = true
     _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
 
     showToast(
-        "LOW SPEED DETECTED: ${speedKmh.toInt()} km/h"
+        "NO MOVEMENT DETECTED"
     )
 
     activateEmergencyMode(
-        reason = "Speed dropped below 3 km/h"
+        reason = "No significant GPS movement detected"
     )
 }
 
