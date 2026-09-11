@@ -20,8 +20,8 @@ import com.example.model.RoutePoint
 import com.example.model.SafetyStatus
 import com.example.model.TravelMode
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -131,7 +131,7 @@ private var deviationUpdateCount = 0
 private var haltStartTimeMillis: Long? = null
 private var lastMovementLocation: Location? = null
 private var hasStartedMoving = false
-private var longHaltJob: Job? = null
+
 
     // Alert Logs for Emergency screen
     private val _dispatchedAlerts = MutableStateFlow<List<AlertDispatchLog>>(emptyList())
@@ -320,22 +320,26 @@ if (movementDistanceMeters >= 5f || speedKmh >= HALT_SPEED_THRESHOLD_KMH) {
         }
 
        
-     // ───────────── LONG HALT DETECTION ─────────────
-// Works for walking and vehicles.
-// Small GPS speed fluctuations are treated as stationary.
-if (hasStartedMoving) {
+// ───────────── LOW SPEED EMERGENCY DETECTION ─────────────
+// If journey is active and speed drops below 3 km/h,
+// immediately activate Emergency Mode.
 
-    val isActuallyMoving = speedKmh >= 3f
+if (hasStartedMoving && speedKmh < 3f) {
 
-    if (isActuallyMoving) {
-        // Real movement detected — cancel any pending halt timer
-        longHaltJob?.cancel()
-        longHaltJob = null
-        haltStartTimeMillis = null
-    } else {
-        // User has stopped — start the independent 30-second timer
-        startLongHaltTimer()
-    }
+    _isDeviating.value = true
+    _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
+
+    showToast(
+        "LOW SPEED DETECTED: ${speedKmh.toInt()} km/h"
+    )
+
+    activateEmergencyMode(
+        reason = "Speed dropped below 3 km/h"
+    )
+
+    longHaltJob?.cancel()
+    longHaltJob = null
+    haltStartTimeMillis = null
 }
 private fun startLongHaltTimer() {
     if (longHaltJob?.isActive == true) return
