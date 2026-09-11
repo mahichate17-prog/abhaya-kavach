@@ -322,7 +322,7 @@ if (movementDistanceMeters >= 5f || speedKmh >= HALT_SPEED_THRESHOLD_KMH) {
       // ───────────── LONG HALT DETECTION ─────────────
 // Works for both walking and vehicle journeys.
 // Small GPS speed fluctuations (0–1 km/h) are treated as stationary.
-if (hasStartedMoving) {
+if (true) {
 
     val isActuallyMoving = speedKmh >= 2f
 
