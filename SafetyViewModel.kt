@@ -131,6 +131,7 @@ private var deviationUpdateCount = 0
 private var haltStartTimeMillis: Long? = null
 private var lastMovementLocation: Location? = null
 private var hasStartedMoving = false
+private var longHaltJob: Job? = null
 
     // Alert Logs for Emergency screen
     private val _dispatchedAlerts = MutableStateFlow<List<AlertDispatchLog>>(emptyList())
@@ -319,44 +320,47 @@ if (movementDistanceMeters >= 5f || speedKmh >= HALT_SPEED_THRESHOLD_KMH) {
         }
 
        
-      // ───────────── LONG HALT DETECTION ─────────────
-// Works for both walking and vehicle journeys.
-// Small GPS speed fluctuations (0–1 km/h) are treated as stationary.
-if (true) {
+     // ───────────── LONG HALT DETECTION ─────────────
+// Works for walking and vehicles.
+// Small GPS speed fluctuations are treated as stationary.
+if (hasStartedMoving) {
 
-    val isActuallyMoving = speedKmh >= 2f
+    val isActuallyMoving = speedKmh >= 3f
 
-    if (!isActuallyMoving) {
+    if (isActuallyMoving) {
+        // Real movement detected — cancel any pending halt timer
+        longHaltJob?.cancel()
+        longHaltJob = null
+        haltStartTimeMillis = null
+    } else {
+        // User has stopped — start the independent 30-second timer
+        startLongHaltTimer()
+    }
+}
+private fun startLongHaltTimer() {
+    if (longHaltJob?.isActive == true) return
 
-        if (haltStartTimeMillis == null) {
-            haltStartTimeMillis = System.currentTimeMillis()
-        }
+    haltStartTimeMillis = System.currentTimeMillis()
 
-        val haltDurationSeconds =
-            (System.currentTimeMillis() - haltStartTimeMillis!!) / 1000L
+    longHaltJob = viewModelScope.launch {
+        delay(LONG_HALT_THRESHOLD_SECONDS * 1000L)
 
-        if (haltDurationSeconds >= LONG_HALT_THRESHOLD_SECONDS) {
-
-            _isDeviating.value = true
+        if (
+    _currentScreen.value == AppScreen.JOURNEY_MONITORING &&
+    _activeJourney.value != null &&
+    haltStartTimeMillis != null
+) {_isDeviating.value = true
             _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
             _currentScreen.value = AppScreen.SAFETY_CHECK
 
-            showToast(
-                "LONG HALT DETECTED: No movement for 30s"
-            )
+            showToast("LONG HALT DETECTED: No movement for 30s")
 
             startSafetyCheckCountdown()
 
             haltStartTimeMillis = null
-            hasStartedMoving = false
         }
-
-    } else {
-        // Real movement detected — restart halt monitoring
-        haltStartTimeMillis = null
     }
 }
-
     // ─────────────────────────────────────────────
     // ADDRESS UPDATE
     // ─────────────────────────────────────────────
@@ -486,6 +490,8 @@ if (true) {
              haltStartTimeMillis = null
             _safetyStatus.value = SafetyStatus.SAFE
             _currentScreen.value = AppScreen.JOURNEY_MONITORING
+            longHaltJob?.cancel()
+            longHaltJob = null
 
             // Start Real GPS tracking immediately
             startTrackingRealGps()
@@ -557,6 +563,8 @@ if (true) {
         _isDeviating.value = false
         deviationUpdateCount = 0
         haltStartTimeMillis = null
+        longHaltJob?.cancel()
+         longHaltJob = null
         _safetyStatus.value = SafetyStatus.SAFE
         _currentScreen.value = AppScreen.JOURNEY_MONITORING
 
@@ -614,6 +622,8 @@ if (true) {
         deviationUpdateCount = 0
         haltStartTimeMillis = null
         lastMovementLocation = null
+        longHaltJob?.cancel()
+         longHaltJob = null
         hasStartedMoving = false
         _isSimulationMode.value = false
         _isSirenActive.value = false
@@ -629,6 +639,8 @@ if (true) {
         _journeyProgress.value = 0f
         _isDeviating.value = false
         deviationUpdateCount = 0
+        longHaltJob?.cancel()
+         longHaltJob = null
         haltStartTimeMillis = null
         _isSimulationMode.value = false
         _isRealGpsActive.value = false
