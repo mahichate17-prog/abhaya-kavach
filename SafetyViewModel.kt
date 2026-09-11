@@ -129,6 +129,7 @@ private companion object {
 
 private var lastMovementLocation: Location? = null
 private var hasStartedMoving = false
+    private var stationaryUpdateCount = 0
 
 
     // Alert Logs for Emergency screen
@@ -321,20 +322,32 @@ if (movementDistanceMeters >= 5f || speedKmh >= HALT_SPEED_THRESHOLD_KMH) {
 // ───────────── NO-MOVEMENT EMERGENCY DETECTION ─────────────
 // Use actual GPS position change instead of unreliable GPS speed.
 
-if (hasStartedMoving && movementDistanceMeters < 5f) {
+if (hasStartedMoving) {
 
-    _isDeviating.value = true
-    _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
+    if (movementDistanceMeters < 5f) {
+        stationaryUpdateCount++
 
-    showToast(
-        "NO MOVEMENT DETECTED"
-    )
+        if (stationaryUpdateCount >= 3) {
 
-    activateEmergencyMode(
-        reason = "No significant GPS movement detected"
-    )
+            _isDeviating.value = true
+            _safetyStatus.value = SafetyStatus.UNEXPECTED_STOP
+
+            showToast(
+                "NO MOVEMENT DETECTED"
+            )
+
+            activateEmergencyMode(
+                reason = "No significant GPS movement detected"
+            )
+
+            stationaryUpdateCount = 0
+        }
+
+    } else {
+        // Significant movement detected — reset stationary counter
+        stationaryUpdateCount = 0
+    }
 }
-
     // ─────────────────────────────────────────────
     // ADDRESS UPDATE
     // ─────────────────────────────────────────────
@@ -461,6 +474,7 @@ if (hasStartedMoving && movementDistanceMeters < 5f) {
             lastMovementLocation = null
             hasStartedMoving = false
             deviationUpdateCount = 0
+            stationaryUpdateCount = 0
              haltStartTimeMillis = null
             _safetyStatus.value = SafetyStatus.SAFE
             _currentScreen.value = AppScreen.JOURNEY_MONITORING
@@ -536,6 +550,7 @@ if (hasStartedMoving && movementDistanceMeters < 5f) {
         _isSimulationMode.value = false
         _isDeviating.value = false
         deviationUpdateCount = 0
+        stationaryUpdateCount = 0
         haltStartTimeMillis = null
         longHaltJob?.cancel()
          longHaltJob = null
@@ -594,9 +609,11 @@ if (hasStartedMoving && movementDistanceMeters < 5f) {
         _safetyStatus.value = SafetyStatus.SAFE
         _isDeviating.value = false
         deviationUpdateCount = 0
+        stationaryUpdateCount = 0
         haltStartTimeMillis = null
         lastMovementLocation = null
         longHaltJob?.cancel()
+        
          longHaltJob = null
         hasStartedMoving = false
         _isSimulationMode.value = false
