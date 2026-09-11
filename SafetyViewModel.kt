@@ -123,7 +123,7 @@ private companion object {
     const val ROUTE_DEVIATION_THRESHOLD_METERS = 30f
     const val REQUIRED_DEVIATION_UPDATES = 1
     const val LONG_HALT_THRESHOLD_SECONDS = 30L
-    const val HALT_SPEED_THRESHOLD_KMH = 3f
+    const val HALT_SPEED_THRESHOLD_KMH = 2f
     const val MAX_ACCEPTABLE_GPS_ACCURACY_METERS = 50f
 }
 
@@ -318,13 +318,15 @@ if (movementDistanceMeters >= 5f || speedKmh >= HALT_SPEED_THRESHOLD_KMH) {
             }
         }
 
-        // ───────────── LONG HALT DETECTION ─────────────
-        // ───────────── LONG HALT DETECTION ─────────────
+       
+      // ───────────── LONG HALT DETECTION ─────────────
 // Works for both walking and vehicle journeys.
-// Detection starts only after the user has actually moved.
+// Small GPS speed fluctuations (0–1 km/h) are treated as stationary.
 if (hasStartedMoving) {
 
-    if (speedKmh < HALT_SPEED_THRESHOLD_KMH) {
+    val isActuallyMoving = speedKmh >= 2f
+
+    if (!isActuallyMoving) {
 
         if (haltStartTimeMillis == null) {
             haltStartTimeMillis = System.currentTimeMillis()
@@ -340,7 +342,7 @@ if (hasStartedMoving) {
             _currentScreen.value = AppScreen.SAFETY_CHECK
 
             showToast(
-                "LONG HALT DETECTED: No movement for ${haltDurationSeconds}s"
+                "LONG HALT DETECTED: No movement for 30s"
             )
 
             startSafetyCheckCountdown()
@@ -350,7 +352,7 @@ if (hasStartedMoving) {
         }
 
     } else {
-        // User is moving again — reset halt timer
+        // Real movement detected — restart halt monitoring
         haltStartTimeMillis = null
     }
 }
